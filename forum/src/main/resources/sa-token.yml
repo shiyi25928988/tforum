@@ -1,0 +1,32 @@
+sa-token:
+  is-print: false
+  token-name: token
+  timeout: 43200
+  excludePath:
+    - /swagger-ui/**
+    - /api-docs/**
+    - /api/v1/user/login
+    - /api/v1/user/register
+    - /api/v1/article/list
+    - /api/v1/article/search
+    - /api/v1/article/*
+    - /api/v1/article/tag/list
+    - /api/v1/forum/post/list
+    - /api/v1/forum/post/*
+    - /api/v1/forum/comment/*
+    - /api/v1/discussion/category/list
+    - /api/v1/discussion/category/*
+    - /api/v1/markdown/list
+    - /api/v1/markdown/*
+    - /api/v1/search
+    - /api/v1/book/list
+    - /api/v1/book/*
+    - /api/v1/book/download
+    - /api/v1/ai/simpleChat
+    - /api/v1/ai/chat
+  alone-redis:
+    database: 2
+    host: ${REDIS_HOST:127.0.0.1}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:123456}
+    timeout: 10

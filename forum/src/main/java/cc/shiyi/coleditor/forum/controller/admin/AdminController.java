@@ -1,0 +1,201 @@
+package cc.shiyi.coleditor.forum.controller.admin;
+
+import cc.shiyi.coleditor.common.http.ResponseWrapper;
+import cc.shiyi.coleditor.forum.service.AsyncDocumentService;
+import cc.shiyi.coleditor.forum.mapper.ArticleMapper;
+import cc.shiyi.coleditor.forum.mapper.ArticleTagMapper;
+import cc.shiyi.coleditor.forum.mapper.BookMapper;
+import cc.shiyi.coleditor.forum.mapper.ForumPostMapper;
+import cc.shiyi.coleditor.forum.table.Article;
+import cc.shiyi.coleditor.forum.table.ArticleTag;
+import cc.shiyi.coleditor.forum.table.Book;
+import cc.shiyi.coleditor.forum.table.ForumPost;
+import cc.shiyi.coleditor.user.mapper.UserMapper;
+import cc.shiyi.coleditor.user.table.User;
+import cn.dev33.satoken.stp.StpUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.Setter;
+import org.springframework.ai.document.Document;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.*;
+
+@RestController
+@Setter(onMethod_ = @Autowired)
+@Tag(name = "管理后台-AdminController")
+public class AdminController {
+
+    private UserMapper userMapper;
+    private ArticleMapper articleMapper;
+    private ForumPostMapper forumPostMapper;
+    private BookMapper bookMapper;
+    private ArticleTagMapper articleTagMapper;
+    private AsyncDocumentService asyncDocumentService;
+
+    /** 校验当前用户是否管理员 */
+    private boolean isAdmin() {
+        Long id = StpUtil.getLoginIdAsLong();
+        if (id == null) return false;
+        User user = userMapper.selectById(id);
+        return user != null && "admin".equals(user.getRole());
+    }
+
+    private ResponseWrapper<?> checkAdmin() {
+        if (!isAdmin()) {
+            return new ResponseWrapper<>().fail("无管理员权限");
+        }
+        return null;
+    }
+
+    @Operation(summary = "管理后台仪表盘")
+    @GetMapping("/api/v1/admin/dashboard")
+    public ResponseWrapper<Map<String, Object>> dashboard() {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return (ResponseWrapper<Map<String, Object>>) check;
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("userCount", userMapper.selectCount(new QueryWrapper<>()));
+        stats.put("articleCount", articleMapper.selectCount(new QueryWrapper<>()));
+        stats.put("postCount", forumPostMapper.selectCount(new QueryWrapper<>()));
+        stats.put("bookCount", bookMapper.selectCount(new QueryWrapper<>()));
+        return new ResponseWrapper<Map<String, Object>>().success(stats);
+    }
+
+    // ============================
+    // 用户管理
+    // ============================
+
+    @Operation(summary = "用户列表")
+    @GetMapping("/api/v1/admin/users")
+    public ResponseWrapper<List<User>> listUsers() {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return (ResponseWrapper<List<User>>) check;
+        return new ResponseWrapper<List<User>>().success(userMapper.selectList(new QueryWrapper<>()));
+    }
+
+    @Operation(summary = "禁用/启用用户")
+    @PostMapping("/api/v1/admin/user/toggleStatus")
+    public ResponseWrapper<?> toggleUserStatus(@RequestParam Long id) {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return check;
+        User user = userMapper.selectById(id);
+        if (user != null) {
+            user.setStatus("disabled".equals(user.getStatus()) ? "active" : "disabled");
+            userMapper.updateById(user);
+        }
+        return new ResponseWrapper<>().success();
+    }
+
+    // ============================
+    // 文章管理
+    // ============================
+
+    @Operation(summary = "文章管理列表")
+    @GetMapping("/api/v1/admin/articles")
+    public ResponseWrapper<List<Article>> listArticles() {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return (ResponseWrapper<List<Article>>) check;
+        return new ResponseWrapper<List<Article>>().success(articleMapper.selectList(new QueryWrapper<>()));
+    }
+
+    @Operation(summary = "管理员删除文章")
+    @PostMapping("/api/v1/admin/article/delete")
+    public ResponseWrapper<?> deleteArticle(@RequestParam Long id) {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return check;
+        articleMapper.deleteById(id);
+        return new ResponseWrapper<>().success();
+    }
+
+    // ============================
+    // 讨论管理
+    // ============================
+
+    @Operation(summary = "讨论管理列表")
+    @GetMapping("/api/v1/admin/posts")
+    public ResponseWrapper<List<ForumPost>> listPosts() {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return (ResponseWrapper<List<ForumPost>>) check;
+        return new ResponseWrapper<List<ForumPost>>().success(forumPostMapper.selectList(new QueryWrapper<>()));
+    }
+
+    @Operation(summary = "管理员删除帖子")
+    @PostMapping("/api/v1/admin/post/delete")
+    public ResponseWrapper<?> deletePost(@RequestParam Long id) {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return check;
+        forumPostMapper.deleteById(id);
+        return new ResponseWrapper<>().success();
+    }
+
+    // ============================
+    // 图书管理
+    // ============================
+
+    @Operation(summary = "图书管理列表")
+    @GetMapping("/api/v1/admin/books")
+    public ResponseWrapper<List<Book>> listBooks() {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return (ResponseWrapper<List<Book>>) check;
+        return new ResponseWrapper<List<Book>>().success(bookMapper.selectList(new QueryWrapper<>()));
+    }
+
+    @Operation(summary = "管理员删除图书")
+    @PostMapping("/api/v1/admin/book/delete")
+    public ResponseWrapper<?> deleteBook(@RequestParam Long id) {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return check;
+        bookMapper.deleteById(id);
+        return new ResponseWrapper<>().success();
+    }
+
+    // ============================
+    // 标签管理
+    // ============================
+
+    @Operation(summary = "标签列表")
+    @GetMapping("/api/v1/admin/tags")
+    public ResponseWrapper<List<ArticleTag>> listTags() {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return (ResponseWrapper<List<ArticleTag>>) check;
+        return new ResponseWrapper<List<ArticleTag>>().success(articleTagMapper.selectList(new QueryWrapper<>()));
+    }
+
+    @Operation(summary = "新增标签")
+    @PostMapping("/api/v1/admin/tag/save")
+    public ResponseWrapper<?> saveTag(@RequestBody ArticleTag tag) {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return check;
+        articleTagMapper.insert(tag);
+        return new ResponseWrapper<>().success();
+    }
+
+    @Operation(summary = "删除标签")
+    @PostMapping("/api/v1/admin/tag/delete")
+    public ResponseWrapper<?> deleteTag(@RequestParam Long id) {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return check;
+        articleTagMapper.deleteById(id);
+        return new ResponseWrapper<>().success();
+    }
+
+    // ============================
+    // 文档上传到 Milvus
+    // ============================
+
+    @Operation(summary = "上传文档并异步解析存入Milvus")
+    @PostMapping(value = "/api/v1/admin/milvus/upload", consumes = "multipart/form-data")
+    public ResponseWrapper<?> uploadToMilvus(@RequestParam("file") MultipartFile file) {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return check;
+        asyncDocumentService.parseAndStoreAsync(file);
+        return new ResponseWrapper<>().success("文件已上传，后台正在解析文档，请稍后在向量检索中验证结果");
+    }
+}

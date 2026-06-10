@@ -1,0 +1,7 @@
+minio:
+  host: ${MINIO_HOST:127.0.0.1}
+  port: ${MINIO_PORT:9000}
+  bucket: ${MINIO_BUCKET:forum}
+  username: ${MINIO_USERNAME:minioadmin}
+  password: ${MINIO_PASSWORD:minioadmin}
+  isHttps: ${MINIO_ISHTTPS:false}

@@ -1,0 +1,40 @@
+server:
+  port: ${SERVER_PORT:8081}
+spring:
+  application:
+    name: forum
+  config:
+    import:
+      - optional:classpath:mysql.yml
+      - optional:classpath:redis.yml
+      - optional:classpath:json.yml
+      - optional:classpath:sa-token.yml
+      - optional:classpath:lucene.yml
+      - optional:classpath:openai.yml
+      - optional:classpath:milvus.yml
+      - optional:classpath:oss.yml
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  main:
+    allow-bean-definition-overriding: true
+  mvc:
+    throw-exception-if-no-handler-found: true
+  web:
+    resources:
+      add-mappings: false
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+logging:
+  config: classpath:logback-spring.xml
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html

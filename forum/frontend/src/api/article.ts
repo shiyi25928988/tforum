@@ -1,0 +1,84 @@
+import request from '@/utils/request'
+
+export interface Article {
+  id: number
+  title: string
+  content: string
+  summary: string
+  coverImage: string
+  categoryId: number
+  authorId: number
+  status: number
+  viewCount: number
+  likeCount: number
+  commentCount: number
+  isPinned: number
+  tags: string
+  createdTime: string
+  updatedTime: string
+}
+
+export interface ArticleRequest {
+  id?: number
+  title: string
+  content: string
+  summary?: string
+  coverImage?: string
+  categoryId?: number
+  status?: number
+  isPinned?: number
+  tags?: string
+}
+
+export interface PageResult<T> {
+  records: T[]
+  total: number
+  size: number
+  current: number
+  pages: number
+}
+
+export function getArticle(id: number) {
+  return request.get(`/api/v1/article/${id}`)
+}
+
+export function listArticles(pageNum = 1, pageSize = 10, categoryId?: number) {
+  return request.get('/api/v1/article/list', {
+    params: { pageNum, pageSize, categoryId },
+  })
+}
+
+export function searchArticles(pageNum = 1, pageSize = 10, keyword?: string, categoryId?: number) {
+  return request.get('/api/v1/article/search', {
+    params: { pageNum, pageSize, keyword, categoryId },
+  })
+}
+
+export function saveArticle(data: ArticleRequest) {
+  return request.post('/api/v1/article/save', data)
+}
+
+export function deleteArticle(id: number) {
+  return request.post('/api/v1/article/delete', null, { params: { id } })
+}
+
+export function likeArticle(id: number) {
+  return request.post('/api/v1/article/like', null, { params: { id } })
+}
+
+// ==========================================
+// 文章标签
+// ==========================================
+
+export interface ArticleTag {
+  id: number
+  name: string
+}
+
+export function listArticleTags() {
+  return request.get('/api/v1/article/tag/list')
+}
+
+export function saveArticleTag(name: string) {
+  return request.post('/api/v1/article/tag/save', { name })
+}

@@ -1,0 +1,12 @@
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DATABASE:1}
+      password: ${REDIS_PASSWORD:123456}
+      timeout: 5s
+      connect-timeout: 30s
+      jedis:
+        pool:
+          enabled: true

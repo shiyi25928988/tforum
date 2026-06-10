@@ -1,0 +1,75 @@
+# ========================================
+# Java / Maven
+# ========================================
+target/
+*.class
+*.jar
+*.war
+*.log
+
+# Maven wrapper (keep mvnw scripts, ignore jar)
+!.mvn/wrapper/maven-wrapper.jar
+
+# ========================================
+# Node.js / Frontend
+# ========================================
+node_modules/
+dist/
+*.local
+.vite/
+.npm/
+*.tsbuildinfo
+package-lock.json
+
+# ========================================
+# IDE
+# ========================================
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+.metadata/
+
+# Eclipse / STS
+.factorypath
+.springBeans
+
+# ========================================
+# OS generated
+# ========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ========================================
+# Application
+# ========================================
+logs/
+docker/volumes/
+data/
+
+# ========================================
+# Environment / Secrets
+# ========================================
+.env
+.env.local
+.env.*.local
+*.env.local
+
+# ========================================
+# Temp
+# ========================================
+*.tmp
+*.bak
+*.swp
+~$*

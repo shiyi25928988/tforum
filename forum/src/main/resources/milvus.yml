@@ -1,0 +1,16 @@
+spring:
+  ai:
+    vectorstore:
+      milvus:
+        client:
+          host: ${SPRING_AI_VECTORSTORE_MILVUS_CLIENT_HOST:127.0.0.1}
+          port: ${SPRING_AI_VECTORSTORE_MILVUS_CLIENT_PORT:19530}
+          enabled: true
+          username:
+          password:
+          database-name: ${SPRING_AI_VECTORSTORE_MILVUS_CLIENT_DATABASE_NAME:default}
+          collection-name: ${SPRING_AI_VECTORSTORE_MILVUS_CLIENT_COLLECTION_NAME:vector_store}
+          use-tls: false
+          tls-ca-path:
+          tls-key-path:
+          tls-cert-path:
