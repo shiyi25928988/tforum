@@ -68,7 +68,8 @@ public class UserService {
         if (Strings.isNullOrEmpty(account)) {
             throw new Exception("account is null");
         }
-        QueryWrapper<User>  queryWrapper = new QueryWrapper<>();
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("account", account);
         return Objects.nonNull(userMapper.selectOne(queryWrapper));
     }
 

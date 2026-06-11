@@ -1,7 +1,12 @@
 <template>
   <div class="page-container" style="max-width: 600px">
     <el-card>
-      <template #header><h2>个人中心</h2></template>
+      <template #header>
+        <div style="display: flex; justify-content: space-between; align-items: center">
+          <h2>个人中心</h2>
+          <el-button :icon="Close" text size="small" style="font-size: 18px; color: #909399" @click="$router.push('/')" />
+        </div>
+      </template>
       <el-form :model="form" label-width="80px">
         <el-form-item label="头像">
           <div style="display: flex; align-items: center; gap: 16px">
@@ -31,6 +36,7 @@ import { ref, onMounted } from 'vue'
 import { updateUserInfo } from '@/api/user'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
+import { Close } from '@element-plus/icons-vue'
 import multiavatar from '@multiavatar/multiavatar'
 
 const userStore = useUserStore()
