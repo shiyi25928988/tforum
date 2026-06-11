@@ -26,12 +26,23 @@
         </div>
       </div>
     </div>
-    <div class="ai-fab" @click="isOpen = !isOpen">AI</div>
+    <div class="ai-fab" @click="isOpen = !isOpen" ref="fabRef">
+      <svg viewBox="0 0 100 100" class="ai-fab-svg">
+        <!-- 圆角三角形 -->
+        <path d="M50 10 C55 10 58 13 60 16 L92 72 C95 78 92 84 86 84 L14 84 C8 84 5 78 8 72 L40 16 C42 13 45 10 50 10 Z" fill="#409eff" />
+        <!-- 眼睛 - 眼白 -->
+        <ellipse cx="50" cy="48" rx="21.6" ry="16.8" fill="white" />
+        <!-- 瞳孔 -->
+        <circle cx="50" cy="48" r="8.4" fill="#1a1a2e" ref="pupilRef" />
+        <!-- 眼睛高光 -->
+        <circle cx="46" cy="44" r="3" fill="white" />
+      </svg>
+    </div>
   </Teleport>
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, computed } from 'vue'
+import { ref, nextTick, computed, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
@@ -41,6 +52,8 @@ const messages = ref<{ role: string; content: string }[]>([])
 const streaming = ref(false)
 const streamContent = ref('')
 const msgContainer = ref<HTMLElement | null>(null)
+const pupilRef = ref<SVGCircleElement | null>(null)
+const fabRef = ref<HTMLElement | null>(null)
 const baseConvId = computed(() => 'user-' + (userStore.user?.id || 0))
 const convId = ref(baseConvId.value)
 
@@ -84,6 +97,32 @@ async function handleSend() {
 }
 function handleClear() { messages.value = []; convId.value = baseConvId.value + '-' + Date.now() }
 function scrollBottom() { nextTick(() => { if (msgContainer.value) msgContainer.value.scrollTop = msgContainer.value.scrollHeight }) }
+
+function handleMouseMove(e: MouseEvent) {
+  if (!fabRef.value || !pupilRef.value) return
+  const fabRect = fabRef.value.getBoundingClientRect()
+  const fabCenterX = fabRect.left + fabRect.width / 2
+  const fabCenterY = fabRect.top + fabRect.height / 2
+  const dx = e.clientX - fabCenterX
+  const dy = e.clientY - fabCenterY
+  // 限制瞳孔最大偏移量
+  const maxOffset = 5
+  const dist = Math.sqrt(dx * dx + dy * dy)
+  const scale = Math.min(dist, 200) / 200 * maxOffset
+  const angle = Math.atan2(dy, dx)
+  const px = Math.cos(angle) * scale
+  const py = Math.sin(angle) * scale
+  pupilRef.value.setAttribute('cx', String(50 + px))
+  pupilRef.value.setAttribute('cy', String(48 + py))
+}
+
+onMounted(() => {
+  window.addEventListener('mousemove', handleMouseMove)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('mousemove', handleMouseMove)
+})
 </script>
 
 <style>
@@ -101,5 +140,7 @@ function scrollBottom() { nextTick(() => { if (msgContainer.value) msgContainer.
 .ai-chat-foot{display:flex;gap:8px;padding:10px 14px;border-top:1px solid #eee;align-items:center}
 .ai-input{flex:1;border:1px solid #dcdfe6;border-radius:6px;padding:6px 10px;font-size:13px;outline:none;font-family:inherit}
 .ai-input:focus{border-color:#409eff}
-.ai-fab{position:fixed;right:16px;bottom:20px;width:48px;height:48px;border-radius:50%;background:#409eff;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer;z-index:99998;box-shadow:0 4px 12px rgba(64,158,255,.4);user-select:none}
+.ai-fab{position:fixed;right:16px;bottom:20px;width:56px;height:56px;cursor:pointer;z-index:99998;filter:drop-shadow(0 4px 12px rgba(64,158,255,.4));user-select:none;transition:transform .2s}
+.ai-fab:hover{transform:scale(1.1)}
+.ai-fab-svg{width:100%;height:100%;display:block}
 </style>
