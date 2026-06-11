@@ -25,7 +25,10 @@
       <el-row v-else :gutter="20">
         <el-col v-for="book in books" :key="book.id" :span="6" style="margin-bottom: 20px">
           <el-card shadow="hover" class="book-card" @click="handlePreview(book)">
-            <div class="book-cover">📄</div>
+            <div class="book-cover">
+              <el-image v-if="book.coverImage" :src="book.coverImage" fit="cover" style="width: 100%; height: 100%; border-radius: 4px" />
+              <span v-else style="font-size: 48px">📄</span>
+            </div>
             <div class="book-card-title" :title="book.title">{{ book.title }}</div>
             <div class="book-card-author">{{ book.author || '佚名' }}</div>
             <div class="book-card-meta">
@@ -74,6 +77,16 @@
         <el-form-item label="简介">
           <el-input v-model="uploadForm.description" type="textarea" :rows="2" placeholder="简介（选填）" />
         </el-form-item>
+        <el-form-item label="封面">
+          <div v-if="coverPreview" style="position: relative; width: 120px">
+            <el-image :src="coverPreview" fit="cover" style="width: 120px; height: 160px; border-radius: 4px" />
+            <el-button style="position: absolute; top: -8px; right: -8px" type="danger" size="small" circle @click="removeCover">×</el-button>
+          </div>
+          <div v-else style="width: 120px; height: 160px; border: 2px dashed #d9d9d9; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #909399; font-size: 13px" @click="triggerCoverInput">
+            + 上传封面
+          </div>
+          <input ref="coverInputRef" type="file" accept="image/*" style="display: none" @change="handleCoverChange" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showUploadDialog = false">取消</el-button>
@@ -103,6 +116,9 @@ const showUploadDialog = ref(false)
 const uploading = ref(false)
 const uploadFile = ref<File | null>(null)
 const uploadForm = ref({ title: '', author: '', description: '' })
+const coverFile = ref<File | null>(null)
+const coverPreview = ref('')
+const coverInputRef = ref<HTMLInputElement>()
 
 async function fetchBooks() {
   loading.value = true
@@ -122,6 +138,28 @@ function handleRemove() { uploadFile.value = null }
 function resetUpload() {
   uploadFile.value = null
   uploadForm.value = { title: '', author: '', description: '' }
+  coverFile.value = null
+  coverPreview.value = ''
+}
+
+function triggerCoverInput() {
+  coverInputRef.value?.click()
+}
+
+function handleCoverChange(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  coverFile.value = file
+  const reader = new FileReader()
+  reader.onload = (ev) => { coverPreview.value = ev.target?.result as string }
+  reader.readAsDataURL(file)
+  input.value = ''
+}
+
+function removeCover() {
+  coverFile.value = null
+  coverPreview.value = ''
 }
 
 async function handleUpload() {
@@ -129,7 +167,7 @@ async function handleUpload() {
   if (!uploadForm.value.title.trim()) { ElMessage.warning('请输入书名'); return }
   uploading.value = true
   try {
-    await uploadBook(uploadFile.value, uploadForm.value.title, uploadForm.value.author, uploadForm.value.description)
+    await uploadBook(uploadFile.value, uploadForm.value.title, uploadForm.value.author, uploadForm.value.description, undefined, coverFile.value || undefined)
     ElMessage.success('上传成功')
     showUploadDialog.value = false
     fetchBooks()
@@ -154,9 +192,13 @@ onMounted(fetchBooks)
 }
 .book-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 .book-cover {
-  font-size: 48px;
+  width: 100%;
+  height: 180px;
   margin-bottom: 8px;
-  line-height: 1.2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 .book-card-title {
   font-size: 14px;

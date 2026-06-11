@@ -48,10 +48,11 @@ public class BookController {
     @PostMapping(value = "/api/v1/book/upload", consumes = "multipart/form-data")
     public ResponseWrapper<Book> upload(
             @RequestParam("file") MultipartFile file,
-            @RequestParam String title,
-            @RequestParam(required = false) String author,
-            @RequestParam(required = false) String description,
-            @RequestParam(required = false) Long categoryId) throws Exception {
+            @RequestParam("title") String title,
+            @RequestParam(value = "author", required = false) String author,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam(value = "categoryId", required = false) Long categoryId,
+            @RequestParam(value = "coverImage", required = false) MultipartFile coverImage) throws Exception {
 
         // 计算文件 SHA-256 哈希
         String fileHash = sha256(file.getBytes());
@@ -66,12 +67,21 @@ public class BookController {
                 .setFolder("books/")
                 .uploadFile(file);
 
+        // 上传封面到 OSS（如果有）
+        String coverImageUrl = null;
+        if (coverImage != null && !coverImage.isEmpty() && coverImage.getSize() > 0) {
+            coverImageUrl = uploadService
+                    .setFolder("books/cover/")
+                    .uploadFile(coverImage);
+        }
+
         Book book = new Book();
         book.setTitle(title);
         book.setAuthor(author);
         book.setDescription(description);
         book.setCategoryId(categoryId);
         book.setFileUrl(fileUrl);
+        book.setCoverImage(coverImageUrl);
         book.setFileSize(file.getSize());
         book.setFileHash(fileHash);
         if (userService.getCurrentUser() != null) {

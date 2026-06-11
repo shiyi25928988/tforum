@@ -12,6 +12,7 @@ import cc.shiyi.coleditor.forum.table.Book;
 import cc.shiyi.coleditor.forum.table.ForumPost;
 import cc.shiyi.coleditor.user.mapper.UserMapper;
 import cc.shiyi.coleditor.user.table.User;
+import cc.shiyi.oss.services.MinioFileDeleteService;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,6 +39,7 @@ public class AdminController {
     private BookMapper bookMapper;
     private ArticleTagMapper articleTagMapper;
     private AsyncDocumentService asyncDocumentService;
+    private MinioFileDeleteService minioFileDeleteService;
 
     /** 校验当前用户是否管理员 */
     private boolean isAdmin() {
@@ -178,13 +180,87 @@ public class AdminController {
         return new ResponseWrapper<List<Book>>().success(bookMapper.selectList(new QueryWrapper<>()));
     }
 
-    @Operation(summary = "管理员删除图书")
+    @Operation(summary = "管理员编辑图书")
+    @PostMapping("/api/v1/admin/book/update")
+    public ResponseWrapper<?> updateBook(@RequestBody Book book) {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return check;
+        Book existing = bookMapper.selectById(book.getId());
+        if (existing != null) {
+            existing.setTitle(book.getTitle());
+            existing.setAuthor(book.getAuthor());
+            existing.setDescription(book.getDescription());
+            if (book.getCoverImage() != null) {
+                existing.setCoverImage(book.getCoverImage());
+            }
+            existing.setUpdatedTime(new Date());
+            bookMapper.updateById(existing);
+        }
+        return new ResponseWrapper<>().success();
+    }
+
+    @Operation(summary = "管理员下架/上架图书")
+    @PostMapping("/api/v1/admin/book/toggleStatus")
+    public ResponseWrapper<?> toggleBookStatus(@RequestParam Long id) {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return check;
+        Book book = bookMapper.selectById(id);
+        if (book != null) {
+            // is_deleted: 0=上架, 1=下架
+            book.setIsDeleted(book.getIsDeleted() != null && book.getIsDeleted() == 1 ? 0 : 1);
+            book.setUpdatedTime(new Date());
+            bookMapper.updateById(book);
+        }
+        return new ResponseWrapper<>().success();
+    }
+
+    @Operation(summary = "管理员物理删除图书（删除数据库记录和MinIO文件）")
     @PostMapping("/api/v1/admin/book/delete")
     public ResponseWrapper<?> deleteBook(@RequestParam Long id) {
         ResponseWrapper<?> check = checkAdmin();
         if (check != null) return check;
-        bookMapper.deleteById(id);
+        Book book = bookMapper.selectById(id);
+        if (book != null) {
+            // 删除 MinIO 上的 PDF 文件
+            if (book.getFileUrl() != null) {
+                try {
+                    // 从 URL 中提取 object name
+                    String fileUrl = book.getFileUrl();
+                    String objectName = extractObjectName(fileUrl);
+                    if (objectName != null) {
+                        minioFileDeleteService.deleteFile(objectName);
+                    }
+                } catch (Exception e) {
+                    // 记录日志但继续删除数据库记录
+                }
+            }
+            // 删除 MinIO 上的封面文件（如果有）
+            if (book.getCoverImage() != null) {
+                try {
+                    String coverName = extractObjectName(book.getCoverImage());
+                    if (coverName != null) {
+                        minioFileDeleteService.deleteFile(coverName);
+                    }
+                } catch (Exception e) {
+                    // ignore
+                }
+            }
+            // 物理删除数据库记录
+            bookMapper.deleteById(id);
+        }
         return new ResponseWrapper<>().success();
+    }
+
+    /** 从 MinIO URL 中提取 object name（bucket 之后的部分） */
+    private String extractObjectName(String url) {
+        if (url == null || url.isEmpty()) return null;
+        // URL 格式类似 http://host:port/bucket/objectName
+        int idx = url.indexOf("//");
+        if (idx < 0) return url;
+        String path = url.substring(idx + 2);
+        int slashIdx = path.indexOf('/');
+        if (slashIdx < 0) return null;
+        return path.substring(slashIdx + 1);
     }
 
     // ============================

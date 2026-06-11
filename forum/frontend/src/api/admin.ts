@@ -51,6 +51,14 @@ export function adminDeleteBook(id: number) {
   return request.post('/api/v1/admin/book/delete', null, { params: { id } })
 }
 
+export function adminUpdateBook(data: { id: number; title: string; author?: string; description?: string; coverImage?: string }) {
+  return request.post('/api/v1/admin/book/update', data)
+}
+
+export function adminToggleBookStatus(id: number) {
+  return request.post('/api/v1/admin/book/toggleStatus', null, { params: { id } })
+}
+
 // ==========================================
 // 标签管理
 // ==========================================
