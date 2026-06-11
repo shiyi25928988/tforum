@@ -74,4 +74,21 @@ public class ArticleController {
         return new ResponseWrapper<>().success();
     }
 
+    @Operation(summary = "获取当前用户的文章列表（含草稿和已发布）")
+    @GetMapping("/api/v1/article/my")
+    public ResponseWrapper<Page<Article>> myArticles(
+            @RequestParam(defaultValue = "1") int pageNum,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(required = false) Integer status) {
+        return new ResponseWrapper<Page<Article>>().success(
+                articleService.listMyArticles(pageNum, pageSize, status));
+    }
+
+    @Operation(summary = "切换文章发布状态")
+    @PostMapping("/api/v1/article/toggleStatus")
+    public ResponseWrapper<?> toggleStatus(@RequestParam Long id) {
+        articleService.toggleStatus(id);
+        return new ResponseWrapper<>().success();
+    }
+
 }

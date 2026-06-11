@@ -27,6 +27,7 @@
         shadow="hover"
         @click="$router.push(`/article/${item.id}`)"
       >
+        <el-image v-if="item.coverImage" :src="item.coverImage" fit="cover" style="width: 100%; height: 180px; border-radius: 6px 6px 0 0; margin: -18px -20px 12px; width: calc(100% + 40px)" />
         <template #header>
           <span style="font-size: 16px; font-weight: 600">{{ item.title }}</span>
         </template>

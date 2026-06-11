@@ -82,3 +82,17 @@ export function listArticleTags() {
 export function saveArticleTag(name: string) {
   return request.post('/api/v1/article/tag/save', { name })
 }
+
+// ==========================================
+// 我的文章
+// ==========================================
+
+export function listMyArticles(pageNum = 1, pageSize = 10, status?: number) {
+  return request.get('/api/v1/article/my', {
+    params: { pageNum, pageSize, status },
+  })
+}
+
+export function toggleArticleStatus(id: number) {
+  return request.post('/api/v1/article/toggleStatus', null, { params: { id } })
+}

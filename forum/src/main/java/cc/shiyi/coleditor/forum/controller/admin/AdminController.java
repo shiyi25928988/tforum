@@ -114,6 +114,19 @@ public class AdminController {
         return new ResponseWrapper<>().success();
     }
 
+    @Operation(summary = "管理员置顶/取消置顶文章")
+    @PostMapping("/api/v1/admin/article/togglePin")
+    public ResponseWrapper<?> togglePin(@RequestParam Long id) {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return check;
+        Article article = articleMapper.selectById(id);
+        if (article != null) {
+            article.setIsPinned(article.getIsPinned() == 1 ? 0 : 1);
+            articleMapper.updateById(article);
+        }
+        return new ResponseWrapper<>().success();
+    }
+
     // ============================
     // 讨论管理
     // ============================
@@ -132,6 +145,24 @@ public class AdminController {
         ResponseWrapper<?> check = checkAdmin();
         if (check != null) return check;
         forumPostMapper.deleteById(id);
+        return new ResponseWrapper<>().success();
+    }
+
+    @Operation(summary = "管理员更新帖子")
+    @PostMapping("/api/v1/admin/post/update")
+    public ResponseWrapper<?> updatePost(@RequestBody ForumPost post) {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return check;
+        ForumPost existingPost = forumPostMapper.selectById(post.getId());
+        if (existingPost != null) {
+            existingPost.setTitle(post.getTitle());
+            existingPost.setContent(post.getContent());
+            if (post.getCategoryId() != null) {
+                existingPost.setCategoryId(post.getCategoryId());
+            }
+            existingPost.setUpdatedTime(new Date());
+            forumPostMapper.updateById(existingPost);
+        }
         return new ResponseWrapper<>().success();
     }
 

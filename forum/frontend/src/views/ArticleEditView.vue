@@ -38,12 +38,11 @@
           <el-radio-button :value="1">发布</el-radio-button>
           <el-radio-button :value="0">草稿</el-radio-button>
         </el-radio-group>
-        <el-checkbox v-model="form.isPinned" :true-value="1" :false-value="0" size="small">置顶</el-checkbox>
         <el-button type="warning" :icon="MagicStick" @click="showAiDialog = true">AI 助手</el-button>
         <el-button type="primary" :icon="Check" @click="handleSave" :loading="saving">
           {{ isEdit ? '更新' : '发布' }}
         </el-button>
-        <el-button :icon="Close" @click="handleCancel">取消</el-button>
+        <el-button :icon="Close" @click="handleCancel" style="color: #606266; border-color: #c0c4cc">取消</el-button>
       </div>
     </div>
 
@@ -71,6 +70,29 @@
 
     <!-- Markdown 编辑器（占据剩余全部空间） -->
     <div class="editor-body">
+      <!-- 封面图片区域（可收起） -->
+      <div class="cover-bar">
+        <div class="cover-bar-header" @click="coverExpanded = !coverExpanded">
+          <el-icon :size="14" style="margin-right: 4px; transition: transform 0.3s" :style="{ transform: coverExpanded ? 'rotate(90deg)' : '' }"><ArrowRight /></el-icon>
+          <span>封面图片</span>
+          <span v-if="coverPreview" style="color: #67c23a; margin-left: 8px; font-size: 12px">已设置</span>
+          <span v-else style="color: #909399; margin-left: 8px; font-size: 12px">未设置</span>
+        </div>
+        <div v-show="coverExpanded" class="cover-bar-body">
+          <div v-if="coverPreview" class="cover-preview">
+            <el-image :src="coverPreview" fit="cover" style="width: 240px; height: 135px; border-radius: 4px" />
+            <div class="cover-actions">
+              <el-button size="small" @click="triggerCoverUpload">更换</el-button>
+              <el-button size="small" type="danger" @click="removeCover">移除</el-button>
+            </div>
+          </div>
+          <div v-else class="cover-placeholder" @click="triggerCoverUpload">
+            <el-icon :size="20"><Plus /></el-icon>
+            <span>点击上传封面图片</span>
+          </div>
+          <input ref="coverInputRef" type="file" accept="image/*" style="display: none" @change="handleCoverFileChange" />
+        </div>
+      </div>
       <md-editor
         v-model="form.content"
         :toolbars="toolbars"
@@ -89,7 +111,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { saveArticle, getArticle, listArticleTags, saveArticleTag, type ArticleTag } from '@/api/article'
 import { uploadToFolder } from '@/api/oss'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Check, Close, MagicStick } from '@element-plus/icons-vue'
+import { Check, Close, MagicStick, Plus, ArrowRight } from '@element-plus/icons-vue'
 import { MdEditor, type ToolbarNames } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 const showAiDialog = ref(false)
@@ -165,10 +187,14 @@ const form = ref({
   title: '',
   content: '',
   summary: '',
+  coverImage: '',
   categoryId: undefined as number | undefined,
   status: 1,
-  isPinned: 0,
 })
+
+const coverPreview = ref('')
+const coverInputRef = ref<HTMLInputElement>()
+const coverExpanded = ref(false)
 
 // 工具栏配置：所有 Markdown 语法按钮
 const toolbars: ToolbarNames[] = [
@@ -220,10 +246,11 @@ async function fetchArticle() {
       title: data.title,
       content: data.content,
       summary: data.summary || '',
+      coverImage: data.coverImage || '',
       categoryId: data.categoryId,
       status: data.status,
-      isPinned: data.isPinned || 0,
     }
+    coverPreview.value = data.coverImage || ''
     // 已有标签转为数组
     if (data.tags) {
       selectedTags.value = data.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
@@ -286,6 +313,41 @@ function handleCancel() {
   }
 }
 
+function triggerCoverUpload() {
+  coverInputRef.value?.click()
+}
+
+async function handleCoverFileChange(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  // 先本地预览
+  const reader = new FileReader()
+  reader.onload = (ev) => {
+    coverPreview.value = ev.target?.result as string
+  }
+  reader.readAsDataURL(file)
+
+  // 上传到 OSS
+  try {
+    const folder = isEdit.value ? `cover/${route.params.id}/` : `cover/temp/`
+    const res: any = await uploadToFolder(file, folder)
+    form.value.coverImage = res.data || res || ''
+    ElMessage.success('封面上传成功')
+  } catch {
+    ElMessage.error('封面上传失败')
+  }
+
+  // 重置 input 以便重复选择同一文件
+  input.value = ''
+}
+
+function removeCover() {
+  coverPreview.value = ''
+  form.value.coverImage = ''
+}
+
 onMounted(() => { fetchTags(); fetchArticle() })
 </script>
 
@@ -329,6 +391,56 @@ onMounted(() => { fetchTags(); fetchArticle() })
 .editor-body {
   flex: 1;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.cover-bar {
+  flex-shrink: 0;
+  border-bottom: 1px solid #e4e7ed;
+  background: #fafafa;
+}
+.cover-bar-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #606266;
+  user-select: none;
+}
+.cover-bar-header:hover {
+  background: #f0f0f0;
+}
+.cover-bar-body {
+  padding: 0 16px 12px;
+}
+.cover-preview {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.cover-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cover-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 240px;
+  height: 60px;
+  border: 2px dashed #d9d9d9;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #909399;
+  font-size: 13px;
+  justify-content: center;
+  transition: border-color 0.3s, color 0.3s;
+}
+.cover-placeholder:hover {
+  border-color: #409eff;
+  color: #409eff;
 }
 .ai-inline {
   padding: 10px 16px;

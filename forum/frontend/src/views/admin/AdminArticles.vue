@@ -13,8 +13,15 @@
         </template>
       </el-table-column>
       <el-table-column prop="viewCount" label="浏览" width="80" />
-      <el-table-column label="操作" width="100">
+      <el-table-column label="操作" width="180">
         <template #default="{ row }">
+          <el-button
+            size="small"
+            :type="row.isPinned === 1 ? 'warning' : 'default'"
+            @click="handleTogglePin(row)"
+          >
+            {{ row.isPinned === 1 ? '取消置顶' : '置顶' }}
+          </el-button>
           <el-popconfirm title="确定删除？" @confirm="handleDelete(row.id)">
             <template #reference>
               <el-button type="danger" size="small">删除</el-button>
@@ -28,13 +35,21 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { adminListArticles, adminDeleteArticle } from '@/api/admin'
+import { adminListArticles, adminDeleteArticle, adminTogglePinArticle } from '@/api/admin'
 import { ElMessage } from 'element-plus'
 
 const articles = ref<any[]>([])
 
 async function fetch() {
   try { const res = await adminListArticles(); articles.value = res.data || [] } catch { /* */ }
+}
+
+async function handleTogglePin(row: any) {
+  try {
+    await adminTogglePinArticle(row.id)
+    ElMessage.success(row.isPinned === 1 ? '已取消置顶' : '已置顶')
+    fetch()
+  } catch { /* */ }
 }
 
 async function handleDelete(id: number) {

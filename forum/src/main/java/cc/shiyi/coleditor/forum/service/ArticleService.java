@@ -2,6 +2,8 @@ package cc.shiyi.coleditor.forum.service;
 
 import cc.shiyi.coleditor.forum.mapper.ArticleMapper;
 import cc.shiyi.coleditor.forum.table.Article;
+import cc.shiyi.coleditor.user.service.UserService;
+import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.Setter;
@@ -17,6 +19,7 @@ public class ArticleService {
 
     private ArticleMapper articleMapper;
     private SearchIndexService searchIndexService;
+    private UserService userService;
 
     public Article save(Article article) {
         Long id;
@@ -101,6 +104,40 @@ public class ArticleService {
             return 1L;
         }
         return articleMapper.maxId() + 1L;
+    }
+
+    /**
+     * 获取当前用户自己的文章列表（含草稿和已发布）
+     */
+    public Page<Article> listMyArticles(int pageNum, int pageSize, Integer status) {
+        Page<Article> page = new Page<>(pageNum, pageSize);
+        QueryWrapper<Article> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("is_deleted", 0);
+        Long currentUserId = StpUtil.getLoginIdAsLong();
+        queryWrapper.eq("author_id", currentUserId);
+        if (Objects.nonNull(status)) {
+            queryWrapper.eq("status", status);
+        }
+        queryWrapper.orderByDesc("created_time");
+        return articleMapper.selectPage(page, queryWrapper);
+    }
+
+    /**
+     * 切换文章发布状态：草稿→发布 或 已发布→草稿
+     */
+    public void toggleStatus(Long id) {
+        Article article = articleMapper.selectById(id);
+        if (Objects.nonNull(article)) {
+            // 校验是否是自己的文章
+            Long currentUserId = StpUtil.getLoginIdAsLong();
+            if (!Objects.equals(article.getAuthorId(), currentUserId)) {
+                throw new RuntimeException("无权操作他人的文章");
+            }
+            // 0=草稿→1=已发布, 1=已发布→0=草稿
+            article.setStatus(article.getStatus() == 1 ? 0 : 1);
+            article.setUpdatedTime(new Date());
+            articleMapper.updateById(article);
+        }
     }
 
 }

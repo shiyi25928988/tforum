@@ -27,12 +27,20 @@ export function adminDeleteArticle(id: number) {
   return request.post('/api/v1/admin/article/delete', null, { params: { id } })
 }
 
+export function adminTogglePinArticle(id: number) {
+  return request.post('/api/v1/admin/article/togglePin', null, { params: { id } })
+}
+
 export function adminListPosts() {
   return request.get('/api/v1/admin/posts')
 }
 
 export function adminDeletePost(id: number) {
   return request.post('/api/v1/admin/post/delete', null, { params: { id } })
+}
+
+export function adminUpdatePost(data: { id: number; title: string; content: string }) {
+  return request.post('/api/v1/admin/post/update', data)
 }
 
 export function adminListBooks() {
@@ -77,4 +85,25 @@ export function uploadDocToMilvus(file: File) {
   return request.post('/api/v1/admin/milvus/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
+}
+
+// 讨论区分组管理
+export interface DiscussionCategory {
+  id?: number
+  name: string
+  description?: string
+  sortOrder?: number
+  topicCount?: number
+}
+
+export function adminListDiscussionCategories() {
+  return request.get('/api/v1/discussion/category/list')
+}
+
+export function adminSaveDiscussionCategory(data: DiscussionCategory) {
+  return request.post('/api/v1/discussion/category/save', data)
+}
+
+export function adminDeleteDiscussionCategory(id: number) {
+  return request.post('/api/v1/discussion/category/delete', null, { params: { id } })
 }

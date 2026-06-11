@@ -2,6 +2,7 @@
   <div class="page-container">
     <el-card v-loading="loading">
       <template #header>
+        <el-image v-if="article?.coverImage" :src="article.coverImage" fit="cover" style="width: 100%; max-height: 300px; border-radius: 8px; margin-bottom: 16px" />
         <h1>{{ article?.title }}</h1>
         <div style="margin-top: 12px; display: flex; gap: 16px; color: #909399; font-size: 13px; flex-wrap: wrap">
           <span v-if="article?.tags">

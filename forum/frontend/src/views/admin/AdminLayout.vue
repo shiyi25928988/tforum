@@ -23,6 +23,9 @@
         <el-menu-item index="/admin/posts">
           <el-icon><ChatDotRound /></el-icon><span>讨论管理</span>
         </el-menu-item>
+        <el-menu-item index="/admin/discussion-categories">
+          <el-icon><Folder /></el-icon><span>讨论分组管理</span>
+        </el-menu-item>
         <el-menu-item index="/admin/books">
           <el-icon><Reading /></el-icon><span>图书管理</span>
         </el-menu-item>
@@ -52,7 +55,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { DataAnalysis, User, Document, ChatDotRound, Reading, PriceTag, Coin, Back } from '@element-plus/icons-vue'
+import { DataAnalysis, User, Document, ChatDotRound, Folder, Reading, PriceTag, Coin, Back } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const activeMenu = computed(() => route.path)

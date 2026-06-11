@@ -47,10 +47,20 @@ export const useUserStore = defineStore('user', () => {
   }
 
   async function logout() {
+    // 先保存token
+    const currentToken = token.value
+    // 立即清除本地状态
     token.value = ''
     localStorage.removeItem(TOKEN_KEY)
-    try { await logoutApi() } catch { /* ignore */ }
     saveUser(null)
+    // 然后再异步调用logoutApi，不等待结果
+    if (currentToken) {
+      // 使用fetch直接调用，不经过axios拦截器
+      fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/user/logout`, {
+        method: 'POST',
+        headers: { 'token': currentToken, 'Content-Type': 'application/json' },
+      }).catch(() => {})
+    }
   }
 
   function getToken(): string {

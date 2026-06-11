@@ -1,7 +1,7 @@
 sa-token:
   is-print: false
   token-name: token
-  timeout: 43200
+  timeout: 12000
   excludePath:
     - /swagger-ui/**
     - /api-docs/**

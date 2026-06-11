@@ -23,7 +23,6 @@
             :key="item.id"
             class="article-card"
             shadow="hover"
-            @click="$router.push(`/article/${item.id}`)"
           >
             <template #header>
               <div style="display: flex; justify-content: space-between; align-items: center">
@@ -31,12 +30,19 @@
                 <el-tag v-if="item.isPinned" type="danger" size="small">置顶</el-tag>
               </div>
             </template>
-            <p style="color: #909399; margin-bottom: 12px">{{ item.summary || item.content?.substring(0, 200) }}</p>
-            <div style="display: flex; gap: 16px; color: #909399; font-size: 13px">
-              <span>{{ item.viewCount || 0 }} 浏览</span>
-              <span>{{ item.likeCount || 0 }} 点赞</span>
-              <span>{{ item.commentCount || 0 }} 评论</span>
-              <span>{{ formatTime(item.createdTime) }}</span>
+            <div style="display: flex; gap: 16px; cursor: pointer" @click="$router.push(`/article/${item.id}`)">
+              <div v-if="item.coverImage" style="flex: 0 0 25%; min-width: 0">
+                <el-image :src="item.coverImage" fit="cover" style="width: 100%; aspect-ratio: 16 / 10; border-radius: 6px" />
+              </div>
+              <div style="flex: 1; min-width: 0">
+                <p style="color: #909399; margin-bottom: 12px">{{ item.summary || item.content?.substring(0, 200) }}</p>
+                <div style="display: flex; gap: 16px; color: #909399; font-size: 13px">
+                  <span>{{ item.viewCount || 0 }} 浏览</span>
+                  <span>{{ item.likeCount || 0 }} 点赞</span>
+                  <span>{{ item.commentCount || 0 }} 评论</span>
+                  <span>{{ formatTime(item.createdTime) }}</span>
+                </div>
+              </div>
             </div>
           </el-card>
           <el-empty v-if="articles.length === 0" description="暂无文章" />
