@@ -88,15 +88,27 @@ public class UserService {
         if(Strings.isNullOrEmpty(account) || Strings.isNullOrEmpty(password)){
             throw new Exception("账号或密码不能为空");
         }
-        String dbPassword = getPasswordByAccount(account);
-        if(dbPassword == null){
+        User user = getUserByAccount(account);
+        if(user == null){
             throw new Exception("账号不存在");
         }
-        if(!password.equals(dbPassword)){
+        if("disabled".equals(user.getStatus())){
+            throw new Exception("账号已被禁用");
+        }
+        if(!password.equals(user.getPassword())){
             throw new Exception("密码错误");
         }
-        StpUtil.login(getIdByAccount(account));
+        StpUtil.login(user.getId());
         return UserConverter.toUserInfo(userMapper.selectById(StpUtil.getLoginIdAsLong()));
+    }
+
+    /**
+     根据账号查询用户。
+     */
+    private User getUserByAccount(String account) {
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("account", account);
+        return userMapper.selectOne(queryWrapper);
     }
 
     /**
