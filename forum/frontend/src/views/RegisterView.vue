@@ -62,7 +62,7 @@
         </el-form-item>
       </el-form>
       <p class="auth-footer">
-        已有账号？<el-link type="primary" @click="$router.push('/login')">立即登录</el-link>
+        已有账号？<el-link type="primary" underline="hover" @click="$router.push('/login')">立即登录</el-link>
       </p>
     </el-card>
   </div>

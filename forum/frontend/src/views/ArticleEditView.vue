@@ -64,7 +64,7 @@
       <div class="ai-inline-tip">
         Ctrl+Enter 发送 ·
         <span v-if="aiLoading" style="color: #409eff">正在生成...</span>
-        <el-link v-else type="primary" :underline="false" @click="showAiDialog = false; aiPrompt = ''">收起</el-link>
+        <el-link v-else type="primary" underline="never" @click="showAiDialog = false; aiPrompt = ''">收起</el-link>
       </div>
     </div>
 

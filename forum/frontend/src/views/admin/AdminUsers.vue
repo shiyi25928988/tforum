@@ -15,7 +15,11 @@
       </el-table-column>
       <el-table-column label="操作" width="120">
         <template #default="{ row }">
+          <template v-if="row.role === 'admin'">
+            <span style="color: #909399; font-size: 12px">管理员</span>
+          </template>
           <el-popconfirm
+            v-else
             :title="row.status === 'disabled' ? '确定启用该用户？' : '确定禁用该用户？'"
             @confirm="handleToggle(row.id)"
           >

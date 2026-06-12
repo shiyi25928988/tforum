@@ -15,7 +15,7 @@
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="title" label="标题" min-width="200">
         <template #default="{ row }">
-          <el-link type="primary" @click="$router.push(`/article/${row.id}`)">{{ row.title }}</el-link>
+          <el-link type="primary" underline="hover" @click="$router.push(`/article/${row.id}`)">{{ row.title }}</el-link>
         </template>
       </el-table-column>
       <el-table-column label="状态" width="100">

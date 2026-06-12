@@ -92,6 +92,9 @@ public class AdminController {
         if (check != null) return check;
         User user = userMapper.selectById(id);
         if (user != null) {
+            if ("admin".equals(user.getRole())) {
+                return new ResponseWrapper<>().fail("不能禁用管理员账号");
+            }
             user.setStatus("disabled".equals(user.getStatus()) ? "active" : "disabled");
             userMapper.updateById(user);
         }
