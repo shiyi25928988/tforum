@@ -57,12 +57,7 @@ public class ArticleService {
     }
 
     public void delete(Long id) {
-        Article article = articleMapper.selectById(id);
-        if (Objects.nonNull(article)) {
-            article.setIsDeleted(1);
-            article.setUpdatedTime(new Date());
-            articleMapper.updateById(article);
-        }
+        articleMapper.deleteById(id);
     }
 
     public Page<Article> listByPage(int pageNum, int pageSize, Long categoryId, String keyword) {

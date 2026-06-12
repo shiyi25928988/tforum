@@ -43,12 +43,7 @@ public class MarkdownDocService {
     }
 
     public void delete(Long id) {
-        MarkdownDoc doc = markdownDocMapper.selectById(id);
-        if (Objects.nonNull(doc)) {
-            doc.setIsDeleted(1);
-            doc.setUpdatedTime(new Date());
-            markdownDocMapper.updateById(doc);
-        }
+        markdownDocMapper.deleteById(id);
     }
 
     public Page<MarkdownDoc> listByPage(int pageNum, int pageSize, String keyword) {

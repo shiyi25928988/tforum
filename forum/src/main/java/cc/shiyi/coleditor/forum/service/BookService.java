@@ -51,12 +51,7 @@ public class BookService {
     }
 
     public void delete(Long id) {
-        Book book = bookMapper.selectById(id);
-        if (Objects.nonNull(book)) {
-            book.setIsDeleted(1);
-            book.setUpdatedTime(new Date());
-            bookMapper.updateById(book);
-        }
+        bookMapper.deleteById(id);
     }
 
     public Page<Book> listByPage(int pageNum, int pageSize, Long categoryId, String keyword) {

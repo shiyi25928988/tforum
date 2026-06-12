@@ -1,6 +1,7 @@
 package cc.shiyi.coleditor.markdown.table;
 
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import lombok.Data;
 
 import java.util.Date;
@@ -20,6 +21,7 @@ public class BaseTable {
     @TableField("updater_id")
     private Long updaterId;
 
+    @TableLogic(value = "0", delval = "1")
     @TableField("is_deleted")
     private Integer isDeleted;
 

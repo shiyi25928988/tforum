@@ -47,12 +47,7 @@ public class ForumPostService {
     }
 
     public void delete(Long id) {
-        ForumPost post = forumPostMapper.selectById(id);
-        if (Objects.nonNull(post)) {
-            post.setIsDeleted(1);
-            post.setUpdatedTime(new Date());
-            forumPostMapper.updateById(post);
-        }
+        forumPostMapper.deleteById(id);
     }
 
     public Page<ForumPost> listByPage(int pageNum, int pageSize, Long categoryId) {

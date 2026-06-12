@@ -2,7 +2,18 @@
   <div class="page-container">
     <el-card v-loading="loading">
       <template #header>
-        <h1>{{ post?.title }}</h1>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start">
+          <h1 style="margin: 0">{{ post?.title }}</h1>
+          <el-popconfirm
+            v-if="canDelete"
+            title="确定删除该话题？"
+            @confirm="handleDelete"
+          >
+            <template #reference>
+              <el-button type="danger" size="small">删除</el-button>
+            </template>
+          </el-popconfirm>
+        </div>
         <div style="margin-top: 12px; color: #909399; font-size: 13px">
           <span>浏览 {{ post?.viewCount || 0 }}</span>
           <span style="margin-left: 16px">{{ formatTime(post?.createdTime) }}</span>
@@ -27,17 +38,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { getPost, listComments, saveComment, type ForumPost, type ForumComment } from '@/api/forum'
+import { ref, onMounted, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { getPost, listComments, saveComment, deletePost, type ForumPost, type ForumComment } from '@/api/forum'
+import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
 import { formatTime } from '@/utils/format'
 
 const route = useRoute()
+const router = useRouter()
+const userStore = useUserStore()
 const post = ref<ForumPost | null>(null)
 const loading = ref(true)
 const comments = ref<ForumComment[]>([])
 const commentContent = ref('')
+
+const canDelete = computed(() => {
+  if (!post.value || !userStore.user) return false
+  return post.value.authorId === userStore.user.id || userStore.user.role === 'admin'
+})
+
+async function handleDelete() {
+  if (!post.value) return
+  try {
+    await deletePost(post.value.id)
+    ElMessage.success('已删除')
+    router.push('/forum')
+  } catch { /* */ }
+}
 
 async function fetchPost() {
   try {

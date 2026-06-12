@@ -9,6 +9,7 @@ import cc.shiyi.coleditor.forum.mapper.ForumPostMapper;
 import cc.shiyi.coleditor.forum.table.Article;
 import cc.shiyi.coleditor.forum.table.ArticleTag;
 import cc.shiyi.coleditor.forum.table.Book;
+import cc.shiyi.coleditor.forum.mapper.BookMapper;
 import cc.shiyi.coleditor.forum.mapper.SkillMapper;
 import cc.shiyi.coleditor.forum.table.Skill;
 import cc.shiyi.coleditor.forum.table.ForumPost;
@@ -212,10 +213,13 @@ public class AdminController {
         if (check != null) return check;
         Book book = bookMapper.selectById(id);
         if (book != null) {
-            // is_deleted: 0=上架, 1=下架
-            book.setIsDeleted(book.getIsDeleted() != null && book.getIsDeleted() == 1 ? 0 : 1);
-            book.setUpdatedTime(new Date());
-            bookMapper.updateById(book);
+            if (book.getIsDeleted() != null && book.getIsDeleted() == 1) {
+                // 上架：通过自定义 SQL 恢复
+                bookMapper.recoverById(id);
+            } else {
+                // 下架
+                bookMapper.deleteById(id);
+            }
         }
         return new ResponseWrapper<>().success();
     }

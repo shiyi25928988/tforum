@@ -43,9 +43,7 @@ public class ForumCommentService {
     public void delete(Long id) {
         ForumComment comment = forumCommentMapper.selectById(id);
         if (Objects.nonNull(comment)) {
-            comment.setIsDeleted(1);
-            comment.setUpdatedTime(new Date());
-            forumCommentMapper.updateById(comment);
+            forumCommentMapper.deleteById(id);
             updatePostCommentCount(comment.getPostId());
         }
     }
