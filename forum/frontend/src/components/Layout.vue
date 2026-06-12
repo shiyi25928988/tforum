@@ -10,6 +10,7 @@
       >
         <el-menu-item index="/home">首页</el-menu-item>
         <el-menu-item index="/forum">讨论区</el-menu-item>
+        <el-menu-item index="/skills">Skills</el-menu-item>
         <el-menu-item index="/books">图书角</el-menu-item>
       </el-menu>
       <div class="user-area">
@@ -23,6 +24,7 @@
               <el-dropdown-menu>
                 <el-dropdown-item @click="$router.push('/user/profile')">个人中心</el-dropdown-item>
                 <el-dropdown-item @click="$router.push('/user/articles')">我的文章</el-dropdown-item>
+                <el-dropdown-item @click="$router.push('/user/skills')">我的 Skills</el-dropdown-item>
                 <el-dropdown-item @click="$router.push('/article/edit')">写文章</el-dropdown-item>
                 <el-dropdown-item v-if="userStore.user?.role === 'admin'" @click="$router.push('/admin')">控制台</el-dropdown-item>
                 <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>

@@ -32,6 +32,9 @@
         <el-menu-item index="/admin/tags">
           <el-icon><PriceTag /></el-icon><span>标签管理</span>
         </el-menu-item>
+        <el-menu-item index="/admin/skills">
+          <el-icon><MagicStick /></el-icon><span>Skills 管理</span>
+        </el-menu-item>
         <el-menu-item index="/admin/milvus">
           <el-icon><Coin /></el-icon><span>Milvus 管理</span>
         </el-menu-item>
@@ -55,7 +58,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { DataAnalysis, User, Document, ChatDotRound, Folder, Reading, PriceTag, Coin, Back } from '@element-plus/icons-vue'
+import { DataAnalysis, User, Document, ChatDotRound, Folder, Reading, PriceTag, Coin, Back, MagicStick } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const activeMenu = computed(() => route.path)

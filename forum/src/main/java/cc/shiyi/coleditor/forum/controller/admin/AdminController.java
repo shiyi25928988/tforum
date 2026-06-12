@@ -9,6 +9,8 @@ import cc.shiyi.coleditor.forum.mapper.ForumPostMapper;
 import cc.shiyi.coleditor.forum.table.Article;
 import cc.shiyi.coleditor.forum.table.ArticleTag;
 import cc.shiyi.coleditor.forum.table.Book;
+import cc.shiyi.coleditor.forum.mapper.SkillMapper;
+import cc.shiyi.coleditor.forum.table.Skill;
 import cc.shiyi.coleditor.forum.table.ForumPost;
 import cc.shiyi.coleditor.user.mapper.UserMapper;
 import cc.shiyi.coleditor.user.table.User;
@@ -40,6 +42,7 @@ public class AdminController {
     private ArticleTagMapper articleTagMapper;
     private AsyncDocumentService asyncDocumentService;
     private MinioFileDeleteService minioFileDeleteService;
+    private SkillMapper skillMapper;
 
     /** 校验当前用户是否管理员 */
     private boolean isAdmin() {
@@ -290,6 +293,27 @@ public class AdminController {
         ResponseWrapper<?> check = checkAdmin();
         if (check != null) return check;
         articleTagMapper.deleteById(id);
+        return new ResponseWrapper<>().success();
+    }
+
+    // ============================
+    // Skills 管理
+    // ============================
+
+    @Operation(summary = "Skills管理列表")
+    @GetMapping("/api/v1/admin/skills")
+    public ResponseWrapper<List<Skill>> listSkills() {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return (ResponseWrapper<List<Skill>>) check;
+        return new ResponseWrapper<List<Skill>>().success(skillMapper.selectList(new QueryWrapper<>()));
+    }
+
+    @Operation(summary = "管理员删除Skill")
+    @PostMapping("/api/v1/admin/skill/delete")
+    public ResponseWrapper<?> deleteSkill(@RequestParam Long id) {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return check;
+        skillMapper.deleteById(id);
         return new ResponseWrapper<>().success();
     }
 

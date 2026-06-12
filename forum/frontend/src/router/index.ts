@@ -15,9 +15,13 @@ const router = createRouter({
         { path: '/forum/post/:id', name: 'postDetail', component: () => import('@/views/PostDetailView.vue') },
         { path: '/user/profile', name: 'profile', component: () => import('@/views/ProfileView.vue') },
         { path: '/user/articles', name: 'myArticles', component: () => import('@/views/MyArticlesView.vue') },
+        { path: '/user/skills', name: 'mySkills', component: () => import('@/views/MySkillsView.vue') },
+        { path: '/skills', name: 'skills', component: () => import('@/views/SkillsView.vue') },
+        { path: '/skill/:id', name: 'skillDetail', component: () => import('@/views/SkillsView.vue') },
       ],
     },
     { path: '/article/edit/:id?', name: 'articleEdit', component: () => import('@/views/ArticleEditView.vue') },
+    { path: '/skill/publish/:id?', name: 'skillPublish', component: () => import('@/views/SkillPublishView.vue') },
     // 管理后台
     { path: '/admin', component: () => import('@/views/admin/AdminLayout.vue'), redirect: '/admin/dashboard',
       children: [
@@ -29,6 +33,7 @@ const router = createRouter({
         { path: 'books', component: () => import('@/views/admin/AdminBooks.vue') },
         { path: 'tags', component: () => import('@/views/admin/AdminTags.vue') },
         { path: 'milvus', component: () => import('@/views/admin/AdminMilvus.vue') },
+        { path: 'skills', component: () => import('@/views/admin/AdminSkills.vue') },
       ],
     },
     { path: '/login', name: 'login', component: () => import('@/views/LoginView.vue') },

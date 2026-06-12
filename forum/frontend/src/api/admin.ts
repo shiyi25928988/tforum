@@ -87,6 +87,22 @@ export function dropAndRecreateMilvusCollection() {
   return request.post('/api/v1/milvus/dropAndCreateCollection')
 }
 
+// ==========================================
+// Skills 管理
+// ==========================================
+
+export function adminListSkills() {
+  return request.get('/api/v1/admin/skills')
+}
+
+export function adminDeleteSkill(id: number) {
+  return request.post('/api/v1/admin/skill/delete', null, { params: { id } })
+}
+
+// ==========================================
+// Milvus 管理
+// ==========================================
+
 export function uploadDocToMilvus(file: File) {
   const formData = new FormData()
   formData.append('file', file)

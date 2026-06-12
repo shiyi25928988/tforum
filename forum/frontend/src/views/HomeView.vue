@@ -37,6 +37,7 @@
               <div style="flex: 1; min-width: 0">
                 <p style="color: #909399; margin-bottom: 12px">{{ item.summary || item.content?.substring(0, 200) }}</p>
                 <div style="display: flex; gap: 16px; color: #909399; font-size: 13px">
+                  <span>{{ authorNames[item.authorId] || '作者' + item.authorId }}</span>
                   <span>{{ item.viewCount || 0 }} 浏览</span>
                   <span>{{ item.likeCount || 0 }} 点赞</span>
                   <span>{{ item.commentCount || 0 }} 评论</span>
@@ -72,6 +73,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { searchArticles, listArticles, type Article } from '@/api/article'
+import { getUserById } from '@/api/user'
 import { formatTime } from '@/utils/format'
 import { Edit, Search } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
@@ -84,6 +86,17 @@ const pageSize = ref(10)
 const total = ref(0)
 const keyword = ref('')
 const hotTags = ref(['Vue', 'Java', 'Spring Boot', 'MyBatis', 'MySQL'])
+const authorNames = ref<Record<number, string>>({})
+
+async function loadAuthorNames(authorIds: number[]) {
+  const ids = [...new Set(authorIds)].filter(id => id && !authorNames.value[id])
+  for (const id of ids) {
+    try {
+      const res = await getUserById(id)
+      authorNames.value[id] = res.data?.username || ('作者' + id)
+    } catch { authorNames.value[id] = '作者' + id }
+  }
+}
 
 async function fetchArticles() {
   try {
@@ -93,6 +106,7 @@ async function fetchArticles() {
     const res = await api(...params as any)
     articles.value = res.data.records
     total.value = res.data.total
+    loadAuthorNames(res.data.records.map((a: Article) => a.authorId))
   } catch {
     // handled by interceptor
   }

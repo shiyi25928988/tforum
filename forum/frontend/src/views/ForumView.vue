@@ -39,7 +39,7 @@
           >
             <div class="topic-body">
               <el-avatar :size="40" class="topic-avatar">
-                {{ (item.authorId || '?').toString().slice(-2) }}
+                {{ (authorNames[item.authorId] || '?').slice(0, 2) }}
               </el-avatar>
               <div class="topic-content">
                 <div class="topic-title">
@@ -50,6 +50,7 @@
                 </div>
                 <p class="topic-preview">{{ item.content?.substring(0, 150) }}</p>
                 <div class="topic-meta">
+                  <span>{{ authorNames[item.authorId] || '用户' + item.authorId }}</span>
                   <span>{{ item.viewCount || 0 }} 浏览</span>
                   <span>{{ item.commentCount || 0 }} 回答</span>
                   <span>{{ formatTime(item.createdTime) }}</span>
@@ -105,6 +106,7 @@
 import { ref, onMounted } from 'vue'
 import { listPosts, savePost, type ForumPost } from '@/api/forum'
 import { listDiscussionCategories, type DiscussionCategory } from '@/api/forum'
+import { getUserById } from '@/api/user'
 import { ElMessage } from 'element-plus'
 import { Plus, ChatLineSquare, Folder } from '@element-plus/icons-vue'
 import { formatTime } from '@/utils/format'
@@ -121,6 +123,7 @@ const activeCategory = ref('')
 const showTopicDialog = ref(false)
 const posting = ref(false)
 const topicForm = ref({ title: '', content: '', categoryId: undefined as number | undefined })
+const authorNames = ref<Record<number, string>>({})
 
 async function fetchCategories() {
   try {
@@ -137,6 +140,7 @@ async function fetchTopics() {
     const res = await listPosts(pageNum.value, pageSize.value, catId)
     posts.value = res.data.records
     total.value = res.data.total
+    loadAuthorNames(res.data.records.map((p: ForumPost) => p.authorId))
   } catch {
     // ignore
   }
@@ -150,6 +154,16 @@ function handleCategorySelect(index: string) {
 
 function getCategoryName(id: number): string {
   return categories.value.find(c => c.id === id)?.name || ''
+}
+
+async function loadAuthorNames(authorIds: number[]) {
+  const ids = [...new Set(authorIds)].filter(id => id && !authorNames.value[id])
+  for (const id of ids) {
+    try {
+      const res = await getUserById(id)
+      authorNames.value[id] = res.data?.username || ('用户' + id)
+    } catch { authorNames.value[id] = '用户' + id }
+  }
 }
 
 async function handleTopic() {

@@ -40,7 +40,7 @@
         </el-radio-group>
         <el-button type="warning" :icon="MagicStick" @click="showAiDialog = true">AI 助手</el-button>
         <el-button type="primary" :icon="Check" @click="handleSave" :loading="saving">
-          {{ isEdit ? '更新' : '发布' }}
+          {{ isEdit ? '更新' : '提交' }}
         </el-button>
         <el-button :icon="Close" @click="handleCancel" style="color: #606266; border-color: #c0c4cc">取消</el-button>
       </div>

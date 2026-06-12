@@ -173,6 +173,34 @@ CREATE TABLE IF NOT EXISTS `search_frequency` (
     `last_access_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后访问时间'
 ) ENGINE=InnoDB COMMENT='搜索频率统计表';
 
+-- =============================================
+-- Skills 模块
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS `skill` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `name` VARCHAR(255) NOT NULL COMMENT 'Skill名称',
+    `description` VARCHAR(1000) DEFAULT NULL COMMENT '描述',
+    `content` TEXT COMMENT 'Skill内容（代码/提示词/配置等）',
+    `icon_url` VARCHAR(500) DEFAULT NULL COMMENT '图标URL',
+    `category` VARCHAR(100) DEFAULT NULL COMMENT '分类',
+    `author_id` BIGINT DEFAULT NULL COMMENT '作者ID',
+    `download_count` INT DEFAULT 0 COMMENT '下载次数',
+    `view_count` INT DEFAULT 0 COMMENT '浏览次数',
+    `status` INT DEFAULT 1 COMMENT '状态: 0=草稿, 1=已发布',
+    `tags` VARCHAR(500) DEFAULT NULL COMMENT '标签，逗号分隔',
+    `attachment_url` VARCHAR(500) DEFAULT NULL COMMENT '附件URL（zip等）',
+    `created_time` DATETIME NOT NULL COMMENT '创建时间',
+    `updated_time` DATETIME DEFAULT NULL COMMENT '更新时间',
+    `creator_id` BIGINT DEFAULT NULL COMMENT '创建者ID',
+    `updater_id` BIGINT DEFAULT NULL COMMENT '更新者ID',
+    `is_deleted` TINYINT(1) DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (`id`),
+    KEY `idx_category` (`category`),
+    KEY `idx_author_id` (`author_id`),
+    KEY `idx_created_time` (`created_time`)
+) ENGINE=InnoDB COMMENT='Skills表';
+
 CREATE TABLE IF NOT EXISTS SPRING_AI_CHAT_MEMORY (
     `conversation_id` VARCHAR(36) NOT NULL,
     `content` TEXT NOT NULL,
