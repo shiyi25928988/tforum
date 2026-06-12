@@ -21,8 +21,11 @@
     <!-- 评论区 -->
     <el-card style="margin-top: 20px" header="评论">
       <div v-for="c in comments" :key="c.id" style="padding: 12px 0; border-bottom: 1px solid #eee">
-        <p>{{ c.content }}</p>
-        <span style="color: #909399; font-size: 12px">{{ formatTime(c.createdTime) }}</span>
+        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px">
+          <span style="font-weight: 500; font-size: 13px">{{ commentAuthorNames[c.authorId] || ('用户' + c.authorId) }}</span>
+          <span style="color: #909399; font-size: 12px">{{ formatTime(c.createdTime) }}</span>
+        </div>
+        <p style="margin: 0">{{ c.content }}</p>
       </div>
       <el-empty v-if="comments.length === 0" description="暂无评论" />
       <div style="margin-top: 16px; display: flex; gap: 8px">
@@ -51,6 +54,7 @@ const loading = ref(true)
 const comments = ref<ForumComment[]>([])
 const commentContent = ref('')
 const renderedContent = ref('')
+const commentAuthorNames = ref<Record<number, string>>({})
 
 async function fetchArticle() {
   try {
@@ -58,20 +62,29 @@ async function fetchArticle() {
     const res = await getArticle(id)
     article.value = res.data
     renderedContent.value = await marked.parse(article.value?.content || '')
-    // 加载作者信息
     if (article.value?.authorId) {
       try {
         const u = await getUserById(article.value.authorId)
         authorName.value = u.data?.username || ''
       } catch { /* */ }
     }
-    // 加载评论
     const cRes = await listComments(id)
     comments.value = cRes.data || []
+    loadCommentAuthorNames(comments.value)
   } catch {
     // handled by interceptor
   } finally {
     loading.value = false
+  }
+}
+
+async function loadCommentAuthorNames(commentList: ForumComment[]) {
+  const ids = [...new Set(commentList.map(c => c.authorId))].filter(id => id && !commentAuthorNames.value[id])
+  for (const id of ids) {
+    try {
+      const res = await getUserById(id)
+      commentAuthorNames.value[id] = res.data?.username || ('用户' + id)
+    } catch { commentAuthorNames.value[id] = '用户' + id }
   }
 }
 
@@ -92,9 +105,9 @@ async function submitComment() {
     await saveComment({ postId: article.value.id, content: commentContent.value })
     ElMessage.success('评论成功')
     commentContent.value = ''
-    // 刷新评论
     const res = await listComments(article.value.id)
     comments.value = res.data || []
+    loadCommentAuthorNames(comments.value)
   } catch {
     // ignore
   }

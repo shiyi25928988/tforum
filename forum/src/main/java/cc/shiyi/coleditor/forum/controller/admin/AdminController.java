@@ -9,7 +9,6 @@ import cc.shiyi.coleditor.forum.mapper.ForumPostMapper;
 import cc.shiyi.coleditor.forum.table.Article;
 import cc.shiyi.coleditor.forum.table.ArticleTag;
 import cc.shiyi.coleditor.forum.table.Book;
-import cc.shiyi.coleditor.forum.mapper.BookMapper;
 import cc.shiyi.coleditor.forum.mapper.SkillMapper;
 import cc.shiyi.coleditor.forum.table.Skill;
 import cc.shiyi.coleditor.forum.table.ForumPost;
@@ -25,9 +24,6 @@ import org.springframework.ai.document.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
-import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
