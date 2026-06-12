@@ -91,6 +91,15 @@ public class ArticleService {
         return articleMapper.selectPage(page, queryWrapper);
     }
 
+    public Page<Article> listHot(int limit) {
+        Page<Article> page = new Page<>(1, limit);
+        QueryWrapper<Article> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("is_deleted", 0);
+        queryWrapper.eq("status", 1);
+        queryWrapper.orderByDesc("view_count");
+        return articleMapper.selectPage(page, queryWrapper);
+    }
+
     public void like(Long id) {
         Article article = articleMapper.selectById(id);
         if (Objects.nonNull(article)) {

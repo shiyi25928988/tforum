@@ -91,4 +91,12 @@ public class ArticleController {
         return new ResponseWrapper<>().success();
     }
 
+    @Operation(summary = "获取热门文章（按浏览量排序）")
+    @GetMapping("/api/v1/article/hot")
+    public ResponseWrapper<Page<Article>> hot(
+            @RequestParam(defaultValue = "10") int limit) {
+        return new ResponseWrapper<Page<Article>>().success(
+                articleService.listHot(limit));
+    }
+
 }

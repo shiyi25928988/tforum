@@ -83,6 +83,10 @@ export function saveArticleTag(name: string) {
   return request.post('/api/v1/article/tag/save', { name })
 }
 
+export function listHotArticles(limit = 10) {
+  return request.get('/api/v1/article/hot', { params: { limit } })
+}
+
 // ==========================================
 // 我的文章
 // ==========================================

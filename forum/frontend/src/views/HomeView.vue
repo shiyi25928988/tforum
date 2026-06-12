@@ -59,10 +59,20 @@
         </div>
       </el-col>
       <el-col :span="8">
-        <el-card header="热门标签">
+        <el-card header="热门标签" style="margin-bottom: 20px">
           <el-tag v-for="tag in hotTags" :key="tag" style="margin: 4px" @click="searchByTag(tag)">
             {{ tag }}
           </el-tag>
+        </el-card>
+        <el-card header="热门文章">
+          <div v-for="item in hotArticles" :key="item.id" class="hot-article-item" @click="$router.push(`/article/${item.id}`)">
+            <div class="hot-rank" :class="{ 'top3': item._rank <= 3 }">{{ item._rank }}</div>
+            <div class="hot-info">
+              <div class="hot-title">{{ item.title }}</div>
+              <div class="hot-meta">{{ item.viewCount || 0 }} 浏览</div>
+            </div>
+          </div>
+          <el-empty v-if="hotArticles.length === 0" description="暂无" :image-size="40" />
         </el-card>
       </el-col>
     </el-row>
@@ -72,7 +82,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { searchArticles, listArticles, type Article } from '@/api/article'
+import { searchArticles, listArticles, listHotArticles, type Article } from '@/api/article'
 import { getUserById } from '@/api/user'
 import { formatTime } from '@/utils/format'
 import { Edit, Search } from '@element-plus/icons-vue'
@@ -87,6 +97,14 @@ const total = ref(0)
 const keyword = ref('')
 const hotTags = ref(['Vue', 'Java', 'Spring Boot', 'MyBatis', 'MySQL'])
 const authorNames = ref<Record<number, string>>({})
+const hotArticles = ref<(Article & { _rank: number })[]>([])
+
+async function fetchHotArticles() {
+  try {
+    const res = await listHotArticles(10)
+    hotArticles.value = (res.data.records || []).map((a: Article, i: number) => ({ ...a, _rank: i + 1 }))
+  } catch { /* */ }
+}
 
 async function loadAuthorNames(authorIds: number[]) {
   const ids = [...new Set(authorIds)].filter(id => id && !authorNames.value[id])
@@ -122,5 +140,44 @@ function searchByTag(tag: string) {
   search()
 }
 
-onMounted(fetchArticles)
+onMounted(() => { fetchArticles(); fetchHotArticles() })
 </script>
+
+<style scoped>
+.hot-article-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+}
+.hot-article-item:last-child { border-bottom: none; }
+.hot-article-item:hover { color: #409eff; }
+.hot-rank {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: #e4e7ed;
+  color: #909399;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.hot-rank.top3 { background: #409eff; color: #fff; }
+.hot-info { flex: 1; min-width: 0; }
+.hot-title {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hot-meta {
+  font-size: 11px;
+  color: #c0c4cc;
+  margin-top: 2px;
+}
+</style>
