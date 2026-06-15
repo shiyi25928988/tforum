@@ -208,3 +208,16 @@ CREATE TABLE IF NOT EXISTS SPRING_AI_CHAT_MEMORY (
     `timestamp` TIMESTAMP NOT NULL,
     INDEX `SPRING_AI_CHAT_MEMORY_CONVERSATION_ID_TIMESTAMP_IDX` (`conversation_id`, `timestamp`)
 );
+
+-- =============================================
+-- 文章向量记录表
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS `article_vector_record` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `article_id` BIGINT NOT NULL COMMENT '文章ID',
+    `milvus_id` BIGINT DEFAULT NULL COMMENT 'Milvus中的向量ID',
+    `created_time` DATETIME NOT NULL COMMENT '存入时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_article_id` (`article_id`)
+) ENGINE=InnoDB COMMENT='文章向量记录表（一篇文章可能对应多条记录）';

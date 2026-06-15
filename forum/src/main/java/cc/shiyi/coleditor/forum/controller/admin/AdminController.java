@@ -1,13 +1,16 @@
 package cc.shiyi.coleditor.forum.controller.admin;
 
+import cc.shiyi.coleditor.common.ai.service.VectorService;
 import cc.shiyi.coleditor.common.http.ResponseWrapper;
 import cc.shiyi.coleditor.forum.service.AsyncDocumentService;
 import cc.shiyi.coleditor.forum.mapper.ArticleMapper;
 import cc.shiyi.coleditor.forum.mapper.ArticleTagMapper;
+import cc.shiyi.coleditor.forum.mapper.ArticleVectorRecordMapper;
 import cc.shiyi.coleditor.forum.mapper.BookMapper;
 import cc.shiyi.coleditor.forum.mapper.ForumPostMapper;
 import cc.shiyi.coleditor.forum.table.Article;
 import cc.shiyi.coleditor.forum.table.ArticleTag;
+import cc.shiyi.coleditor.forum.table.ArticleVectorRecord;
 import cc.shiyi.coleditor.forum.table.Book;
 import cc.shiyi.coleditor.forum.mapper.SkillMapper;
 import cc.shiyi.coleditor.forum.table.Skill;
@@ -17,11 +20,13 @@ import cc.shiyi.coleditor.user.table.User;
 import cc.shiyi.oss.services.MinioFileDeleteService;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import io.milvus.client.MilvusClient;
+import io.milvus.param.dml.DeleteParam;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Setter;
-import org.springframework.ai.document.Document;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -40,6 +45,14 @@ public class AdminController {
     private AsyncDocumentService asyncDocumentService;
     private MinioFileDeleteService minioFileDeleteService;
     private SkillMapper skillMapper;
+    private VectorService vectorService;
+    private ArticleVectorRecordMapper articleVectorRecordMapper;
+    private MilvusClient milvusClient;
+    private Environment environment;
+
+    private String getMilvusCollectionName() {
+        return environment.getProperty("spring.ai.vectorstore.milvus.client.collection-name", "vector_store");
+    }
 
     /** 校验当前用户是否管理员 */
     private boolean isAdmin() {
@@ -210,10 +223,8 @@ public class AdminController {
         Book book = bookMapper.selectById(id);
         if (book != null) {
             if (book.getIsDeleted() != null && book.getIsDeleted() == 1) {
-                // 上架：通过自定义 SQL 恢复
                 bookMapper.recoverById(id);
             } else {
-                // 下架
                 bookMapper.deleteById(id);
             }
         }
@@ -227,40 +238,29 @@ public class AdminController {
         if (check != null) return check;
         Book book = bookMapper.selectById(id);
         if (book != null) {
-            // 删除 MinIO 上的 PDF 文件
             if (book.getFileUrl() != null) {
                 try {
-                    // 从 URL 中提取 object name
-                    String fileUrl = book.getFileUrl();
-                    String objectName = extractObjectName(fileUrl);
+                    String objectName = extractObjectName(book.getFileUrl());
                     if (objectName != null) {
                         minioFileDeleteService.deleteFile(objectName);
                     }
-                } catch (Exception e) {
-                    // 记录日志但继续删除数据库记录
-                }
+                } catch (Exception e) {}
             }
-            // 删除 MinIO 上的封面文件（如果有）
             if (book.getCoverImage() != null) {
                 try {
                     String coverName = extractObjectName(book.getCoverImage());
                     if (coverName != null) {
                         minioFileDeleteService.deleteFile(coverName);
                     }
-                } catch (Exception e) {
-                    // ignore
-                }
+                } catch (Exception e) {}
             }
-            // 物理删除数据库记录
             bookMapper.deleteById(id);
         }
         return new ResponseWrapper<>().success();
     }
 
-    /** 从 MinIO URL 中提取 object name（bucket 之后的部分） */
     private String extractObjectName(String url) {
         if (url == null || url.isEmpty()) return null;
-        // URL 格式类似 http://host:port/bucket/objectName
         int idx = url.indexOf("//");
         if (idx < 0) return url;
         String path = url.substring(idx + 2);
@@ -321,7 +321,7 @@ public class AdminController {
     }
 
     // ============================
-    // 文档上传到 Milvus
+    // Milvus 管理
     // ============================
 
     @Operation(summary = "上传文档并异步解析存入Milvus")
@@ -331,5 +331,74 @@ public class AdminController {
         if (check != null) return check;
         asyncDocumentService.parseAndStoreAsync(file);
         return new ResponseWrapper<>().success("文件已上传，后台正在解析文档，请稍后在向量检索中验证结果");
+    }
+
+    @Operation(summary = "将选中的文章存入向量数据库")
+    @PostMapping("/api/v1/admin/milvus/storeArticles")
+    public ResponseWrapper<?> storeArticles(@RequestBody List<Long> articleIds) {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return check;
+        int count = 0;
+        for (Long articleId : articleIds) {
+            // 先清理旧记录
+            QueryWrapper<ArticleVectorRecord> delQw = new QueryWrapper<>();
+            delQw.eq("article_id", articleId);
+            articleVectorRecordMapper.delete(delQw);
+
+            Article article = articleMapper.selectById(articleId);
+            if (article == null || article.getStatus() == null || article.getStatus() != 1) {
+                continue;
+            }
+            // 整篇文章作为一条向量记录
+            String content = article.getTitle() + "\n" + (article.getContent() != null ? article.getContent() : "");
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("article_id", article.getId());
+            metadata.put("title", article.getTitle());
+            metadata.put("source", "article");
+            vectorService.storeDocument(content, metadata);
+            // 记录
+            ArticleVectorRecord record = new ArticleVectorRecord();
+            record.setArticleId(articleId);
+            record.setCreatedTime(new Date());
+            articleVectorRecordMapper.insert(record);
+            count++;
+        }
+        return new ResponseWrapper<>().success("成功存入 " + count + " 篇文章到向量库");
+    }
+
+    @Operation(summary = "获取已存入向量库的文章ID列表")
+    @GetMapping("/api/v1/admin/milvus/storedArticles")
+    public ResponseWrapper<List<Long>> getStoredArticles() {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return (ResponseWrapper<List<Long>>) check;
+        List<ArticleVectorRecord> records = articleVectorRecordMapper.selectList(new QueryWrapper<>());
+        List<Long> ids = records.stream().map(ArticleVectorRecord::getArticleId).distinct().collect(java.util.stream.Collectors.toList());
+        return new ResponseWrapper<List<Long>>().success(ids);
+    }
+
+    @Operation(summary = "从向量库中删除选中的文章")
+    @PostMapping("/api/v1/admin/milvus/deleteArticles")
+    public ResponseWrapper<?> deleteArticlesFromVector(@RequestBody List<Long> articleIds) {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return check;
+        // 通过 metadata JSON 字段中的 article_id 删除
+        try {
+            String expr = articleIds.stream()
+                    .map(id -> "metadata[\"article_id\"] == " + id)
+                    .collect(java.util.stream.Collectors.joining(" or "));
+            milvusClient.delete(DeleteParam.newBuilder()
+                    .withCollectionName(getMilvusCollectionName())
+                    .withExpr(expr)
+                    .build());
+        } catch (Exception e) {
+            return new ResponseWrapper<>().fail("向量删除失败: " + e.getMessage());
+        }
+        // 删除数据库记录
+        for (Long articleId : articleIds) {
+            QueryWrapper<ArticleVectorRecord> qw = new QueryWrapper<>();
+            qw.eq("article_id", articleId);
+            articleVectorRecordMapper.delete(qw);
+        }
+        return new ResponseWrapper<>().success("已从向量库删除 " + articleIds.size() + " 篇文章");
     }
 }

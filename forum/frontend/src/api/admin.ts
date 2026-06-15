@@ -111,6 +111,18 @@ export function uploadDocToMilvus(file: File) {
   })
 }
 
+export function storeArticlesToMilvus(articleIds: number[]) {
+  return request.post('/api/v1/admin/milvus/storeArticles', articleIds)
+}
+
+export function getStoredArticles() {
+  return request.get('/api/v1/admin/milvus/storedArticles')
+}
+
+export function deleteArticlesFromMilvus(articleIds: number[]) {
+  return request.post('/api/v1/admin/milvus/deleteArticles', articleIds)
+}
+
 // 讨论区分组管理
 export interface DiscussionCategory {
   id?: number

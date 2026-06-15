@@ -37,6 +37,7 @@
         </el-card>
       </el-col>
     </el-row>
+
     <!-- 上传文档 -->
     <el-card shadow="never" style="margin-top: 16px">
       <template #header>上传文档到向量库</template>
@@ -61,6 +62,47 @@
       </div>
     </el-card>
 
+    <!-- 文章存入向量库 -->
+    <el-card shadow="never" style="margin-top: 16px">
+      <template #header>文章管理 — 存入 / 移出向量库</template>
+      <div style="display: flex; gap: 12px; margin-bottom: 12px">
+        <el-select v-model="articleFilter" placeholder="筛选文章" clearable style="width: 180px" @change="fetchArticles">
+          <el-option label="全部已发布" value="all" />
+          <el-option label="已存入向量库" value="in" />
+          <el-option label="未存入向量库" value="out" />
+        </el-select>
+        <el-button type="primary" :disabled="selectedArticleIds.length === 0" @click="handleStoreArticles">
+          存入向量库 ({{ selectedArticleIds.length }})
+        </el-button>
+        <el-button type="danger" :disabled="selectedArticleIds.length === 0" @click="handleDeleteArticles">
+          从向量库删除 ({{ selectedArticleIds.length }})
+        </el-button>
+      </div>
+      <el-table
+        ref="articleTableRef"
+        :data="articles"
+        style="width: 100%"
+        @selection-change="handleSelectionChange"
+        v-loading="articleLoading"
+        max-height="400"
+      >
+        <el-table-column type="selection" width="50" />
+        <el-table-column prop="id" label="ID" width="60" />
+        <el-table-column prop="title" label="标题" min-width="200" show-overflow-tooltip />
+        <el-table-column label="向量状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="storedArticleIds.has(row.id) ? 'success' : 'info'" size="small">
+              {{ storedArticleIds.has(row.id) ? '已存入' : '未存入' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="viewCount" label="浏览" width="70" />
+        <el-table-column prop="createdTime" label="创建时间" width="160">
+          <template #default="{ row }">{{ formatDate(row.createdTime) }}</template>
+        </el-table-column>
+      </el-table>
+    </el-card>
+
     <div v-if="result" style="margin-top: 16px">
       <el-alert :type="result.success ? 'success' : 'error'" :closable="false">
         {{ result.msg }}
@@ -70,8 +112,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { createMilvusCollection, dropAndRecreateMilvusCollection, uploadDocToMilvus } from '@/api/admin'
+import { ref, onMounted } from 'vue'
+import {
+  createMilvusCollection,
+  dropAndRecreateMilvusCollection,
+  uploadDocToMilvus,
+  storeArticlesToMilvus,
+  getStoredArticles,
+  deleteArticlesFromMilvus,
+  adminListArticles,
+} from '@/api/admin'
+import { ElMessage } from 'element-plus'
 
 const creating = ref(false)
 const dropping = ref(false)
@@ -80,7 +131,19 @@ const uploading = ref(false)
 const uploadFile = ref<File | null>(null)
 const result = ref<{ success: boolean; msg: string } | null>(null)
 
+// 文章相关
+const articles = ref<any[]>([])
+const articleLoading = ref(false)
+const selectedArticleIds = ref<number[]>([])
+const storedArticleIds = ref<Set<number>>(new Set())
+const articleFilter = ref('all')
+
 function onFileChange(file: any) { uploadFile.value = file.raw as File }
+
+function formatDate(dateStr: string) {
+  if (!dateStr) return ''
+  return new Date(dateStr).toLocaleString()
+}
 
 async function handleUpload() {
   if (!uploadFile.value) return
@@ -112,8 +175,71 @@ async function handleDrop() {
     const res: any = await dropAndRecreateMilvusCollection()
     const ok = res?.data?.status === 0 || res?.code === 0
     result.value = { success: ok, msg: ok ? '重建成功' : (res?.data?.reason || '重建失败') }
+    // 重建后刷新
+    await fetchStoredArticles()
   } catch {
     result.value = { success: false, msg: '重建失败' }
   } finally { dropping.value = false }
 }
+
+// ========== 文章向量管理 ==========
+
+async function fetchArticles() {
+  articleLoading.value = true
+  try {
+    const res = await adminListArticles()
+    let list = res.data || []
+    // 只显示已发布文章 (status === 1)
+    list = list.filter((a: any) => a.status === 1)
+    if (articleFilter.value === 'in') {
+      list = list.filter((a: any) => storedArticleIds.value.has(a.id))
+    } else if (articleFilter.value === 'out') {
+      list = list.filter((a: any) => !storedArticleIds.value.has(a.id))
+    }
+    articles.value = list
+  } catch { /* */ }
+  finally { articleLoading.value = false }
+}
+
+async function fetchStoredArticles() {
+  try {
+    const res = await getStoredArticles()
+    storedArticleIds.value = new Set(res.data || [])
+  } catch { /* */ }
+}
+
+function handleSelectionChange(rows: any[]) {
+  selectedArticleIds.value = rows.map(r => r.id)
+}
+
+async function handleStoreArticles() {
+  if (selectedArticleIds.value.length === 0) return
+  result.value = null
+  try {
+    const res: any = await storeArticlesToMilvus(selectedArticleIds.value)
+    result.value = { success: true, msg: res?.data || res?.message || '存入成功' }
+    await fetchStoredArticles()
+    await fetchArticles()
+  } catch {
+    result.value = { success: false, msg: '存入失败' }
+  }
+}
+
+async function handleDeleteArticles() {
+  if (selectedArticleIds.value.length === 0) return
+  result.value = null
+  try {
+    const res: any = await deleteArticlesFromMilvus(selectedArticleIds.value)
+    result.value = { success: true, msg: res?.data || res?.message || '删除成功' }
+    await fetchStoredArticles()
+    await fetchArticles()
+  } catch {
+    result.value = { success: false, msg: '删除失败' }
+  }
+}
+
+onMounted(async () => {
+  await fetchStoredArticles()
+  await fetchArticles()
+})
 </script>
