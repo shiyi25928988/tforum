@@ -29,6 +29,8 @@
         :key="c.id"
         :comment="c"
         :all-comments="comments"
+        :show-author="true"
+        :author-names="commentAuthorNames"
         @reply="replyTo"
       />
       <el-empty v-if="comments.length === 0" description="暂无回复，抢个沙发吧" />
@@ -45,6 +47,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getPost, listComments, saveComment, deletePost, type ForumPost, type ForumComment } from '@/api/forum'
+import { getUserById } from '@/api/user'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
 import { formatTime } from '@/utils/format'
@@ -58,6 +61,7 @@ const loading = ref(true)
 const comments = ref<ForumComment[]>([])
 const commentContent = ref('')
 const replyTarget = ref<number | null>(null)
+const commentAuthorNames = ref<Record<number, string>>({})
 
 const topLevelComments = computed(() => comments.value.filter(c => !c.replyTo))
 
@@ -91,10 +95,21 @@ async function fetchPost() {
     const [postRes, commentRes] = await Promise.all([getPost(id), listComments(id, 'post')])
     post.value = postRes.data
     comments.value = commentRes.data || []
+    loadCommentAuthorNames(comments.value)
   } catch {
     // ignore
   } finally {
     loading.value = false
+  }
+}
+
+async function loadCommentAuthorNames(commentList: ForumComment[]) {
+  const ids = [...new Set(commentList.map(c => c.authorId))].filter(id => id && !commentAuthorNames.value[id])
+  for (const id of ids) {
+    try {
+      const res = await getUserById(id)
+      commentAuthorNames.value[id] = res.data?.username || ('用户' + id)
+    } catch { commentAuthorNames.value[id] = '用户' + id }
   }
 }
 
@@ -107,6 +122,7 @@ async function submitComment() {
     replyTarget.value = null
     const res = await listComments(post.value.id, 'post')
     comments.value = res.data || []
+    loadCommentAuthorNames(comments.value)
   } catch {
     // ignore
   }
