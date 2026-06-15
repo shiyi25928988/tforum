@@ -47,4 +47,7 @@ public class Skill extends BaseTable {
     @TableField("attachment_url")
     private String attachmentUrl;
 
+    @TableField("git_url")
+    private String gitUrl;
+
 }

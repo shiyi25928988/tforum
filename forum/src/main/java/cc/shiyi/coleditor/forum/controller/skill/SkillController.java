@@ -60,7 +60,8 @@ public class SkillController {
             @RequestParam(value = "tags", required = false) String tags,
             @RequestParam(value = "status", required = false) Integer status,
             @RequestParam(value = "iconFile", required = false) MultipartFile iconFile,
-            @RequestParam(value = "attachmentFile", required = false) MultipartFile attachmentFile) throws Exception {
+            @RequestParam(value = "attachmentFile", required = false) MultipartFile attachmentFile,
+            @RequestParam(value = "gitUrl", required = false) String gitUrl) throws Exception {
 
         String iconUrl = null;
         if (iconFile != null && !iconFile.isEmpty() && iconFile.getSize() > 0) {
@@ -86,6 +87,7 @@ public class SkillController {
         if (status != null) skill.setStatus(status);
         if (iconUrl != null) skill.setIconUrl(iconUrl);
         if (attachmentUrl != null) skill.setAttachmentUrl(attachmentUrl);
+        if (gitUrl != null) skill.setGitUrl(gitUrl);
         if (userService.getCurrentUser() != null) {
             skill.setAuthorId(userService.getCurrentUser().getId());
         }

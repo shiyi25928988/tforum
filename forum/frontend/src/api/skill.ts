@@ -7,6 +7,7 @@ export interface Skill {
   content: string
   iconUrl: string
   attachmentUrl: string
+  gitUrl: string
   category: string
   authorId: number
   downloadCount: number

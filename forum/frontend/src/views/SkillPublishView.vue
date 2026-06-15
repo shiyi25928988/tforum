@@ -49,6 +49,9 @@
           </div>
           <input ref="attachmentInputRef" type="file" accept=".zip" style="display: none" @change="handleAttachmentChange" />
         </el-form-item>
+        <el-form-item label="Git地址">
+          <el-input v-model="form.gitUrl" placeholder="Git 仓库地址，如 https://github.com/xxx/yyy" />
+        </el-form-item>
         <el-form-item>
           <el-radio-group v-model="form.status">
             <el-radio-button :value="1">发布</el-radio-button>
@@ -85,6 +88,7 @@ const form = ref({
   category: '',
   tags: '',
   status: 1,
+  gitUrl: '',
 })
 
 const iconFile = ref<File | null>(null)
@@ -144,6 +148,7 @@ async function fetchSkill() {
       category: data.category || '',
       tags: data.tags || '',
       status: data.status,
+      gitUrl: data.gitUrl || '',
     }
     if (data.iconUrl) {
       iconPreview.value = data.iconUrl
@@ -169,6 +174,7 @@ async function handleSave() {
     fd.append('status', String(form.value.status))
     if (iconFile.value) fd.append('iconFile', iconFile.value)
     if (attachmentFile.value) fd.append('attachmentFile', attachmentFile.value)
+    fd.append('gitUrl', form.value.gitUrl)
     await saveSkill(fd)
     ElMessage.success(isEdit.value ? '更新成功' : '发布成功')
     router.push('/skills')

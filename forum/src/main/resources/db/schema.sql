@@ -190,6 +190,7 @@ CREATE TABLE IF NOT EXISTS `skill` (
     `status` INT DEFAULT 1 COMMENT '状态: 0=草稿, 1=已发布',
     `tags` VARCHAR(500) DEFAULT NULL COMMENT '标签，逗号分隔',
     `attachment_url` VARCHAR(500) DEFAULT NULL COMMENT '附件URL（zip等）',
+    `git_url` VARCHAR(500) DEFAULT NULL COMMENT 'Git仓库地址',
     `created_time` DATETIME NOT NULL COMMENT '创建时间',
     `updated_time` DATETIME DEFAULT NULL COMMENT '更新时间',
     `creator_id` BIGINT DEFAULT NULL COMMENT '创建者ID',
