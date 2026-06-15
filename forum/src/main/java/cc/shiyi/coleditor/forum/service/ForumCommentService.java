@@ -1,9 +1,9 @@
 package cc.shiyi.coleditor.forum.service;
 
+import cc.shiyi.coleditor.forum.mapper.ArticleMapper;
 import cc.shiyi.coleditor.forum.mapper.ForumCommentMapper;
 import cc.shiyi.coleditor.forum.mapper.ForumPostMapper;
 import cc.shiyi.coleditor.forum.table.ForumComment;
-import cc.shiyi.coleditor.forum.table.ForumPost;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +19,7 @@ public class ForumCommentService {
 
     private ForumCommentMapper forumCommentMapper;
     private ForumPostMapper forumPostMapper;
+    private ArticleMapper articleMapper;
 
     public ForumComment save(ForumComment comment) {
         Long id;
@@ -27,7 +28,7 @@ public class ForumCommentService {
             comment.setId(id);
             comment.setCreatedTime(new Date());
             forumCommentMapper.insert(comment);
-            updatePostCommentCount(comment.getPostId());
+            updateCommentCount(comment.getPostId(), comment.getCommentType());
         } else {
             id = comment.getId();
             comment.setUpdatedTime(new Date());
@@ -44,26 +45,35 @@ public class ForumCommentService {
         ForumComment comment = forumCommentMapper.selectById(id);
         if (Objects.nonNull(comment)) {
             forumCommentMapper.deleteById(id);
-            updatePostCommentCount(comment.getPostId());
+            updateCommentCount(comment.getPostId(), comment.getCommentType());
         }
     }
 
     public List<ForumComment> listByPostId(Long postId) {
+        return listByPostIdAndType(postId, null);
+    }
+
+    public List<ForumComment> listByPostIdAndType(Long postId, String commentType) {
         QueryWrapper<ForumComment> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("post_id", postId);
         queryWrapper.eq("is_deleted", 0);
+        if (commentType != null && !commentType.isEmpty()) {
+            queryWrapper.eq("comment_type", commentType);
+        }
         queryWrapper.orderByAsc("created_time");
         return forumCommentMapper.selectList(queryWrapper);
     }
 
-    private void updatePostCommentCount(Long postId) {
-        ForumPost post = forumPostMapper.selectById(postId);
-        if (Objects.nonNull(post)) {
-            QueryWrapper<ForumComment> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("post_id", postId);
-            queryWrapper.eq("is_deleted", 0);
-            post.setCommentCount(Math.toIntExact(forumCommentMapper.selectCount(queryWrapper)));
-            forumPostMapper.updateById(post);
+    private void updateCommentCount(Long postId, String commentType) {
+        QueryWrapper<ForumComment> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("post_id", postId);
+        queryWrapper.eq("is_deleted", 0);
+        int count = Math.toIntExact(forumCommentMapper.selectCount(queryWrapper));
+
+        if ("article".equals(commentType)) {
+            articleMapper.updateCommentCount(postId, count);
+        } else {
+            forumPostMapper.updateCommentCount(postId, count);
         }
     }
 

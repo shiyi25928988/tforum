@@ -20,16 +20,19 @@
 
     <!-- 评论区 -->
     <el-card style="margin-top: 20px" header="评论">
-      <div v-for="c in comments" :key="c.id" style="padding: 12px 0; border-bottom: 1px solid #eee">
-        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px">
-          <span style="font-weight: 500; font-size: 13px">{{ commentAuthorNames[c.authorId] || ('用户' + c.authorId) }}</span>
-          <span style="color: #909399; font-size: 12px">{{ formatTime(c.createdTime) }}</span>
-        </div>
-        <p style="margin: 0">{{ c.content }}</p>
-      </div>
+      <CommentItem
+        v-for="c in topLevelComments"
+        :key="c.id"
+        :comment="c"
+        :all-comments="comments"
+        :show-author="true"
+        :author-names="commentAuthorNames"
+        @reply="replyTo"
+      />
       <el-empty v-if="comments.length === 0" description="暂无评论" />
       <div style="margin-top: 16px; display: flex; gap: 8px">
-        <el-input v-model="commentContent" placeholder="写下你的评论..." />
+        <el-input v-model="commentContent" :placeholder="replyTarget ? '回复 #' + replyTarget + '：' : '写下你的评论...'" />
+        <el-button v-if="replyTarget" size="small" @click="cancelReply">取消</el-button>
         <el-button type="primary" @click="submitComment">发表</el-button>
       </div>
     </el-card>
@@ -37,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { getArticle, likeArticle, type Article } from '@/api/article'
 import { saveComment, listComments, type ForumComment } from '@/api/forum'
@@ -46,6 +49,7 @@ import { ElMessage } from 'element-plus'
 import { Star } from '@element-plus/icons-vue'
 import { formatTime } from '@/utils/format'
 import { marked } from 'marked'
+import CommentItem from '@/components/CommentItem.vue'
 
 const route = useRoute()
 const article = ref<Article | null>(null)
@@ -53,8 +57,21 @@ const authorName = ref('')
 const loading = ref(true)
 const comments = ref<ForumComment[]>([])
 const commentContent = ref('')
+const replyTarget = ref<number | null>(null)
 const renderedContent = ref('')
 const commentAuthorNames = ref<Record<number, string>>({})
+
+const topLevelComments = computed(() => comments.value.filter(c => !c.replyTo))
+
+function replyTo(c: ForumComment) {
+  replyTarget.value = c.id
+  commentContent.value = ''
+}
+
+function cancelReply() {
+  replyTarget.value = null
+  commentContent.value = ''
+}
 
 async function fetchArticle() {
   try {
@@ -68,7 +85,7 @@ async function fetchArticle() {
         authorName.value = u.data?.username || ''
       } catch { /* */ }
     }
-    const cRes = await listComments(id)
+    const cRes = await listComments(id, 'article')
     comments.value = cRes.data || []
     loadCommentAuthorNames(comments.value)
   } catch {
@@ -102,10 +119,11 @@ async function handleLike() {
 async function submitComment() {
   if (!commentContent.value.trim() || !article.value) return
   try {
-    await saveComment({ postId: article.value.id, content: commentContent.value })
+    await saveComment({ postId: article.value.id, content: commentContent.value, commentType: 'article', replyTo: replyTarget.value ?? undefined })
     ElMessage.success('评论成功')
     commentContent.value = ''
-    const res = await listComments(article.value.id)
+    replyTarget.value = null
+    const res = await listComments(article.value.id, 'article')
     comments.value = res.data || []
     loadCommentAuthorNames(comments.value)
   } catch {

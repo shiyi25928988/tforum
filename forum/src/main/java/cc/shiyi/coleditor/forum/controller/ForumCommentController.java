@@ -24,8 +24,11 @@ public class ForumCommentController {
 
     @Operation(summary = "根据帖子id获取评论列表")
     @GetMapping("/api/v1/forum/comment/{postId}")
-    public ResponseWrapper<List<ForumComment>> listByPostId(@PathVariable("postId") Long postId) {
-        return new ResponseWrapper<List<ForumComment>>().success(forumCommentService.listByPostId(postId));
+    public ResponseWrapper<List<ForumComment>> listByPostId(
+            @PathVariable("postId") Long postId,
+            @RequestParam(value = "commentType", required = false) String commentType) {
+        return new ResponseWrapper<List<ForumComment>>().success(
+                forumCommentService.listByPostIdAndType(postId, commentType));
     }
 
     @Operation(summary = "新增/更新评论")

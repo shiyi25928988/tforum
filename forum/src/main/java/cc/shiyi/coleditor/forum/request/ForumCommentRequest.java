@@ -13,4 +13,8 @@ public class ForumCommentRequest {
 
     private Long parentId;
 
+    private String commentType;
+
+    private Long replyTo;
+
 }

@@ -131,6 +131,8 @@ CREATE TABLE IF NOT EXISTS `forum_comment` (
     `content` TEXT COMMENT '评论内容',
     `parent_id` BIGINT DEFAULT NULL COMMENT '父评论ID，用于回复',
     `author_id` BIGINT DEFAULT NULL COMMENT '作者ID',
+    `comment_type` VARCHAR(20) DEFAULT 'post' COMMENT '评论类型: article=文章评论, post=帖子评论',
+    `reply_to` BIGINT DEFAULT NULL COMMENT '回复目标评论ID',
     `created_time` DATETIME NOT NULL COMMENT '创建时间',
     `updated_time` DATETIME DEFAULT NULL COMMENT '更新时间',
     `creator_id` BIGINT DEFAULT NULL COMMENT '创建者ID',

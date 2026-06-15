@@ -26,4 +26,10 @@ public class ForumComment extends BaseTable {
     @TableField("author_id")
     private Long authorId;
 
+    @TableField("comment_type")
+    private String commentType;
+
+    @TableField("reply_to")
+    private Long replyTo;
+
 }

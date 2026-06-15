@@ -25,6 +25,8 @@ export interface ForumComment {
   content: string
   parentId: number
   authorId: number
+  commentType: string
+  replyTo: number
   createdTime: string
 }
 
@@ -33,6 +35,8 @@ export interface ForumCommentRequest {
   postId: number
   content: string
   parentId?: number
+  commentType?: string
+  replyTo?: number
 }
 
 // 帖子
@@ -55,8 +59,10 @@ export function deletePost(id: number) {
 }
 
 // 评论
-export function listComments(postId: number) {
-  return request.get(`/api/v1/forum/comment/${postId}`)
+export function listComments(postId: number, commentType?: string) {
+  return request.get(`/api/v1/forum/comment/${postId}`, {
+    params: { commentType },
+  })
 }
 
 export function saveComment(data: ForumCommentRequest) {
