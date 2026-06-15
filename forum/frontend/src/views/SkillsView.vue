@@ -69,6 +69,10 @@
           </div>
         </div>
         <div style="background: #f5f7fa; border-radius: 8px; padding: 16px; white-space: pre-wrap; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 13px">{{ detailSkill.content }}</div>
+        <div v-if="detailSkill.gitUrl" style="margin-top: 12px; display: flex; align-items: center; gap: 8px">
+          <span style="color: #909399; font-size: 13px">Git 仓库：</span>
+          <el-link :href="detailSkill.gitUrl" target="_blank" type="primary">{{ detailSkill.gitUrl }}</el-link>
+        </div>
       </div>
       <template #footer>
         <el-button @click="detailVisible = false">关闭</el-button>
