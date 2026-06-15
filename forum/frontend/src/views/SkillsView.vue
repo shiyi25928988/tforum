@@ -73,6 +73,12 @@
           <span style="color: #909399; font-size: 13px">Git 仓库：</span>
           <el-link :href="detailSkill.gitUrl" target="_blank" type="primary">{{ detailSkill.gitUrl }}</el-link>
         </div>
+        <div v-if="detailSkill.attachmentUrl" style="margin-top: 8px; display: flex; align-items: center; gap: 8px">
+          <span style="color: #909399; font-size: 13px">附件：</span>
+          <el-link :href="detailSkill.attachmentUrl" target="_blank" type="primary">
+            {{ detailSkill.attachmentUrl.split('/').pop() || '下载' }}
+          </el-link>
+        </div>
       </div>
       <template #footer>
         <el-button @click="detailVisible = false">关闭</el-button>
