@@ -1,0 +1,133 @@
+/* ========================================
+   Light 主题（默认）
+   ======================================== */
+:root {
+  --bg-primary: #f5f7fa;
+  --bg-card: #ffffff;
+  --bg-header: #ffffff;
+  --bg-hover: #f0f2f5;
+  --bg-input: #ffffff;
+
+  --text-primary: #303133;
+  --text-regular: #606266;
+  --text-secondary: #909399;
+  --text-placeholder: #c0c4cc;
+
+  --border-base: #e4e7ed;
+  --border-light: #ebeef5;
+  --border-lighter: #f2f6fc;
+
+  --color-primary: #409eff;
+  --color-success: #67c23a;
+  --color-warning: #e6a23c;
+  --color-danger: #f56c6c;
+  --color-info: #909399;
+
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.05);
+  --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+  --el-bg-color: #ffffff;
+  --el-bg-color-overlay: #ffffff;
+  --el-bg-color-page: #f5f7fa;
+  --el-text-color-primary: #303133;
+  --el-text-color-regular: #606266;
+  --el-border-color-base: #e4e7ed;
+  --el-border-color-light: #ebeef5;
+  --el-border-color-lighter: #f2f6fc;
+  --el-fill-color-blank: #ffffff;
+  --el-fill-color-light: #f5f7fa;
+}
+
+/* ========================================
+   Dark 主题
+   ======================================== */
+html.dark {
+  --bg-primary: #141414;
+  --bg-card: #1e1e1e;
+  --bg-header: #1a1a1a;
+  --bg-hover: #2a2a2a;
+  --bg-input: #262626;
+
+  --text-primary: #e5e5e5;
+  --text-regular: #b0b0b0;
+  --text-secondary: #7a7a7a;
+  --text-placeholder: #555555;
+
+  --border-base: #333333;
+  --border-light: #2a2a2a;
+  --border-lighter: #222222;
+
+  --color-primary: #5cadff;
+  --color-success: #6bc30d;
+  --color-warning: #f0a020;
+  --color-danger: #f06a6a;
+  --color-info: #7a7a7a;
+
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.3);
+  --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.45);
+
+  --el-bg-color: #1e1e1e;
+  --el-bg-color-overlay: #262626;
+  --el-bg-color-page: #141414;
+  --el-text-color-primary: #e5e5e5;
+  --el-text-color-regular: #b0b0b0;
+  --el-border-color-base: #333333;
+  --el-border-color-light: #2a2a2a;
+  --el-border-color-lighter: #222222;
+  --el-fill-color-blank: #1e1e1e;
+  --el-fill-color-light: #262626;
+}
+
+/* ========================================
+   Macaron 主题（柔和粉彩色调）
+   ======================================== */
+html.macaron {
+  --bg-primary: #fdf6f0;
+  --bg-card: #fffaf5;
+  --bg-header: #fff8f2;
+  --bg-hover: #fce4d6;
+  --bg-input: #fffaf5;
+
+  --text-primary: #4a3f35;
+  --text-regular: #7a6f65;
+  --text-secondary: #a09080;
+  --text-placeholder: #c0b5aa;
+
+  --border-base: #f0dcc8;
+  --border-light: #f5e6d8;
+  --border-lighter: #faf0e5;
+
+  --color-primary: #e8966b;
+  --color-success: #8cb86b;
+  --color-warning: #e8b84b;
+  --color-danger: #e8757a;
+  --color-info: #9b8ea8;
+
+  --shadow-card: 0 2px 12px rgba(180, 140, 110, 0.08);
+  --shadow-hover: 0 4px 14px rgba(180, 140, 110, 0.15);
+
+  --el-bg-color: #fffaf5;
+  --el-bg-color-overlay: #fff8f2;
+  --el-bg-color-page: #fdf6f0;
+  --el-text-color-primary: #4a3f35;
+  --el-text-color-regular: #7a6f65;
+  --el-border-color-base: #f0dcc8;
+  --el-border-color-light: #f5e6d8;
+  --el-border-color-lighter: #faf0e5;
+  --el-fill-color-blank: #fffaf5;
+  --el-fill-color-light: #fdf6f0;
+}
+
+/* ========================================
+   全局样式应用 CSS 变量
+   ======================================== */
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background 0.3s, color 0.3s;
+}
+
+/* Element Plus 主题色覆盖 */
+html.dark {
+  color-scheme: dark;
+}

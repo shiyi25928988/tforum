@@ -44,8 +44,8 @@
       </el-menu>
     </el-aside>
     <el-container>
-      <el-header style="background: #fff; border-bottom: 1px solid #e4e7ed; display: flex; align-items: center; justify-content: space-between">
-        <span style="font-size: 16px">管理后台</span>
+      <el-header style="background: var(--bg-header); border-bottom: 1px solid var(--border-base); display: flex; align-items: center; justify-content: space-between">
+        <span style="font-size: 16px; color: var(--text-primary)">管理后台</span>
         <el-button size="small" @click="$router.push('/')">返回前台</el-button>
       </el-header>
       <el-main>

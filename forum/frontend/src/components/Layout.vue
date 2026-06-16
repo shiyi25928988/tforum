@@ -14,6 +14,25 @@
         <el-menu-item index="/books">图书角</el-menu-item>
       </el-menu>
       <div class="user-area">
+        <!-- 主题切换 -->
+        <el-dropdown trigger="click">
+          <el-button text size="small" style="font-size: 18px; padding: 4px">
+            {{ themeIcon }}
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item @click="themeStore.setTheme('light')">
+                ☀️ 浅色
+              </el-dropdown-item>
+              <el-dropdown-item @click="themeStore.setTheme('dark')">
+                🌙 深色
+              </el-dropdown-item>
+              <el-dropdown-item @click="themeStore.setTheme('macaron')">
+                🍬 马卡龙
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
         <template v-if="userStore.isLoggedIn">
           <el-dropdown>
             <span class="el-dropdown-link">
@@ -48,12 +67,22 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useThemeStore } from '@/stores/theme'
 import { ElMessage } from 'element-plus'
 import multiavatar from '@multiavatar/multiavatar'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const themeStore = useThemeStore()
+
+const themeIcon = computed(() => {
+  switch (themeStore.current.value) {
+    case 'dark': return '🌙'
+    case 'macaron': return '🍬'
+    default: return '☀️'
+  }
+})
 
 const avatarSrc = computed(() => {
   const a = userStore.user?.avatar
@@ -83,19 +112,19 @@ async function handleLogout() {
 <style scoped>
 .layout {
   min-height: 100vh;
-  background: #f5f7fa;
+  background: var(--bg-primary);
 }
 .header {
   display: flex;
   align-items: center;
-  background: #fff;
-  border-bottom: 1px solid #e4e7ed;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border-base);
   padding: 0 24px;
 }
 .logo {
   font-size: 20px;
   font-weight: 700;
-  color: #409eff;
+  color: var(--color-primary);
   cursor: pointer;
   margin-right: 40px;
 }
@@ -116,11 +145,12 @@ async function handleLogout() {
 }
 .username {
   font-size: 14px;
+  color: var(--text-primary);
 }
 .nav-avatar {
   width: 36px; height: 36px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #e4e7ed;
+  border: 2px solid var(--border-base);
 }
 </style>
