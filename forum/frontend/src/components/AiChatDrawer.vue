@@ -75,17 +75,18 @@ async function handleSend() {
       body: JSON.stringify({ conversationId: convId.value, message: userMsg }),
     })
     const reader = res.body?.getReader(); if (!reader) throw 0
-    const dec = new TextDecoder(); let buf = '', le = false
+    const dec = new TextDecoder(); let buf = ''
     while (true) {
       const { done, value } = await reader.read(); if (done) break
       buf += dec.decode(value, { stream: true })
       const ls = buf.split('\n'); buf = ls.pop() || ''
       for (const l of ls) {
-        if (!l.startsWith('data:')) continue
-        const t = l.substring(5)
-        if (t === '' && le) { streamContent.value += '\n'; le = false }
-        else if (t === '') { le = true }
-        else { if (le) { streamContent.value += ' '; le = false }; streamContent.value += t }
+        if (l === 'data:') {
+          // 空的 data: 表示换行
+          streamContent.value += '\n'
+        } else if (l.startsWith('data:')) {
+          streamContent.value += l.substring(5)
+        }
       }
       scrollBottom()
     }

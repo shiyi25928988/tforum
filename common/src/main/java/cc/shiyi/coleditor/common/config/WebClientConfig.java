@@ -33,7 +33,7 @@ public class WebClientConfig {
         HttpClient httpClient = HttpClient
                 .create(connectionProvider)
                 .secure(t -> t.sslContext(sslContext))
-                .responseTimeout(Duration.ofSeconds(15));
+                .responseTimeout(Duration.ofMinutes(5));
         WebClient webClient = WebClient
                 .builder()
                 .clientConnector(new ReactorClientHttpConnector(httpClient))

@@ -1,5 +1,7 @@
 <template>
   <div class="editor-page">
+    <!-- AI 生成进度条 -->
+    <div v-if="aiLoading" class="ai-progress-bar" />
     <!-- 顶部工具栏 -->
     <div class="editor-topbar">
       <el-input
@@ -94,6 +96,7 @@
         </div>
       </div>
       <md-editor
+        ref="mdEditorRef"
         v-model="form.content"
         :toolbars="toolbars"
         :preview="true"
@@ -106,7 +109,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { saveArticle, getArticle, listArticleTags, saveArticleTag, type ArticleTag } from '@/api/article'
 import { uploadToFolder } from '@/api/oss'
@@ -140,7 +143,6 @@ async function handleAiGenerate() {
 
     const decoder = new TextDecoder()
     let buffer = ''
-    let lastEmpty = false
     form.value.content = aiContentBefore.value + '\n\n'
 
     while (true) {
@@ -153,17 +155,11 @@ async function handleAiGenerate() {
       buffer = lines.pop() || ''
 
       for (const line of lines) {
-        if (line.startsWith('data:')) {
-          const text = line.substring(5)
-          if (text === '' && lastEmpty) {
-            form.value.content += '\n'
-            lastEmpty = false
-          } else if (text === '') {
-            lastEmpty = true
-          } else {
-            if (lastEmpty) { form.value.content += ' '; lastEmpty = false }
-            form.value.content += text
-          }
+        if (line === 'data:') {
+          // 空的 data: 表示换行
+          form.value.content += '\n'
+        } else if (line.startsWith('data:')) {
+          form.value.content += line.substring(5)
         }
       }
     }
@@ -171,6 +167,7 @@ async function handleAiGenerate() {
     ElMessage.error('AI 生成失败')
     form.value.content = aiContentBefore.value
   } finally {
+    scrollPreviewToBottom()
     aiLoading.value = false
   }
 }
@@ -195,6 +192,17 @@ const form = ref({
 const coverPreview = ref('')
 const coverInputRef = ref<HTMLInputElement>()
 const coverExpanded = ref(false)
+const mdEditorRef = ref<any>(null)
+
+function scrollPreviewToBottom() {
+  nextTick(() => {
+    const editor = mdEditorRef.value?.$el
+    if (!editor) return
+    // 只滚动右侧预览区，左侧编辑区由 md-editor 自己管理
+    const right = editor.querySelector('.md-editor-preview-wrapper')
+    if (right) right.scrollTop = right.scrollHeight
+  })
+}
 
 // 工具栏配置：所有 Markdown 语法按钮
 const toolbars: ToolbarNames[] = [
@@ -352,6 +360,23 @@ onMounted(() => { fetchTags(); fetchArticle() })
 </script>
 
 <style scoped>
+/* AI 生成进度条 - 顶部无限循环动画 */
+.ai-progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 200;
+  background: linear-gradient(90deg, #409eff, #67c23a, #e6a23c, #f56c6c, #409eff);
+  background-size: 200% 100%;
+  animation: ai-progress-slide 1.5s linear infinite;
+}
+@keyframes ai-progress-slide {
+  0% { background-position: 200% 0; }
+  100% { background-position: 0 0; }
+}
+
 .editor-page {
   position: fixed;
   inset: 0;

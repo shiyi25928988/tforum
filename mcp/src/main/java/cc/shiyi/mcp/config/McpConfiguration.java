@@ -1,6 +1,7 @@
 package cc.shiyi.mcp.config;
 
-import cc.shiyi.mcp.service.RagMcpService;
+//import cc.shiyi.mcp.service.RagMcpService;
+import cc.shiyi.mcp.service.SearchMcpService;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,13 +13,16 @@ import java.util.Arrays;
 @Configuration
 public class McpConfiguration {
 
+//    @Autowired
+//    RagMcpService ragMcpService;
+
     @Autowired
-    RagMcpService ragMcpService;
+    SearchMcpService searchMcpService;
 
     @Bean
     public ToolCallbackProvider toolCallbackProvider() {
         return MethodToolCallbackProvider.builder().toolObjects(
-                Arrays.asList(ragMcpService).toArray()
+                Arrays.asList(searchMcpService).toArray()
         ).build();
     }
 }

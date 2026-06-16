@@ -47,6 +47,7 @@ public class ChatController {
         ChatClient chatClient = chatClientPool.get(request.getConversationId());
         return chatClient.prompt()
                 .user(request.getMessage())
+                .toolCallbacks(toolCallbackProvider)
                 .stream()
                 .content();
     }
