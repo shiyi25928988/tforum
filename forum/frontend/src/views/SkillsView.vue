@@ -56,25 +56,47 @@
     </div>
 
     <!-- 详情弹窗 -->
-    <el-dialog v-model="detailVisible" :title="detailSkill?.name" width="650px" @close="detailSkill = null">
+    <el-dialog v-model="detailVisible" :title="detailSkill?.name" width="700px" @close="detailSkill = null">
       <div v-if="detailSkill">
-        <div style="display: flex; gap: 16px; align-items: flex-start; margin-bottom: 16px">
-          <el-image v-if="detailSkill.iconUrl" :src="detailSkill.iconUrl" fit="contain" style="width: 64px; height: 64px; border-radius: 12px; flex-shrink: 0" />
-          <div>
-            <p style="color: #909399; margin: 0 0 8px">{{ detailSkill.description }}</p>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap">
-              <el-tag v-if="detailSkill.category" size="small">{{ detailSkill.category }}</el-tag>
-              <el-tag v-for="t in tagList" :key="t" size="small" type="info">{{ t }}</el-tag>
+        <!-- 图标 + 基本信息 -->
+        <div style="display: flex; gap: 16px; align-items: flex-start; margin-bottom: 20px">
+          <el-image v-if="detailSkill.iconUrl" :src="detailSkill.iconUrl" fit="contain" style="width: 72px; height: 72px; border-radius: 12px; flex-shrink: 0" />
+          <span v-else style="font-size: 48px; flex-shrink: 0">🧩</span>
+          <div style="flex: 1">
+            <!-- 描述 -->
+            <p style="margin: 0 0 12px; color: #303133; font-size: 14px; line-height: 1.6">{{ detailSkill.description || '暂无描述' }}</p>
+            <!-- 元信息 -->
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+              <span style="color: #909399; font-size: 13px">
+                <span style="margin-right: 4px">📂</span>分类：
+                <el-tag v-if="detailSkill.category" size="small" type="primary">{{ detailSkill.category }}</el-tag>
+                <span v-else style="color: #c0c4cc">未分类</span>
+              </span>
+              <span style="color: #909399; font-size: 13px">
+                <span style="margin-right: 4px">🏷️</span>标签：
+                <template v-if="tagList.length">
+                  <el-tag v-for="t in tagList" :key="t" size="small" type="info" style="margin-right: 4px">{{ t }}</el-tag>
+                </template>
+                <span v-else style="color: #c0c4cc">无</span>
+              </span>
+            </div>
+            <!-- 统计 -->
+            <div style="margin-top: 8px; display: flex; gap: 16px; color: #909399; font-size: 12px">
+              <span>⬇ 下载 {{ detailSkill.downloadCount || 0 }}</span>
+              <span>👁 浏览 {{ detailSkill.viewCount || 0 }}</span>
             </div>
           </div>
         </div>
-        <div style="background: #f5f7fa; border-radius: 8px; padding: 16px; white-space: pre-wrap; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 13px">{{ detailSkill.content }}</div>
+        <!-- 内容 -->
+        <div class="skill-detail-content markdown-body" v-html="renderedContent" />
+        <!-- Git 地址 -->
         <div v-if="detailSkill.gitUrl" style="margin-top: 12px; display: flex; align-items: center; gap: 8px">
-          <span style="color: #909399; font-size: 13px">Git 仓库：</span>
+          <span style="color: #909399; font-size: 13px">🔗 Git 仓库：</span>
           <el-link :href="detailSkill.gitUrl" target="_blank" type="primary">{{ detailSkill.gitUrl }}</el-link>
         </div>
+        <!-- 附件 -->
         <div v-if="detailSkill.attachmentUrl" style="margin-top: 8px; display: flex; align-items: center; gap: 8px">
-          <span style="color: #909399; font-size: 13px">附件：</span>
+          <span style="color: #909399; font-size: 13px">📎 附件：</span>
           <el-link :href="detailSkill.attachmentUrl" target="_blank" type="primary">
             {{ detailSkill.attachmentUrl.split('/').pop() || '下载' }}
           </el-link>
@@ -82,18 +104,19 @@
       </div>
       <template #footer>
         <el-button @click="detailVisible = false">关闭</el-button>
-        <el-button type="primary" @click="handleDownload(detailSkill!)">下载</el-button>
+        <el-button v-if="detailSkill?.attachmentUrl" type="primary" @click="handleDownload(detailSkill!)">下载附件</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { listSkills, downloadSkill, type Skill } from '@/api/skill'
 import { MagicStick, Plus, Search } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
+import { marked } from 'marked'
 
 const userStore = useUserStore()
 const skills = ref<Skill[]>([])
@@ -111,6 +134,11 @@ const detailSkill = ref<Skill | null>(null)
 const tagList = computed(() => {
   if (!detailSkill.value?.tags) return []
   return detailSkill.value.tags.split(',').map(t => t.trim()).filter(Boolean)
+})
+
+const renderedContent = computed(() => {
+  if (!detailSkill.value?.content) return ''
+  return marked.parse(detailSkill.value.content) as string
 })
 
 async function fetchSkills() {
@@ -191,4 +219,55 @@ onMounted(fetchSkills)
   color: #c0c4cc;
   align-items: center;
 }
+
+/* 详情弹窗 md 内容样式 */
+.skill-detail-content {
+  background: #f5f7fa;
+  border-radius: 8px;
+  padding: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+  line-height: 1.8;
+  font-size: 14px;
+}
+.skill-detail-content :deep(h1) { font-size: 1.5em; margin: 0.5em 0; }
+.skill-detail-content :deep(h2) { font-size: 1.3em; margin: 0.5em 0; }
+.skill-detail-content :deep(h3) { font-size: 1.15em; margin: 0.4em 0; }
+.skill-detail-content :deep(p) { margin: 0.4em 0; }
+.skill-detail-content :deep(ul), .skill-detail-content :deep(ol) { padding-left: 1.5em; margin: 0.4em 0; }
+.skill-detail-content :deep(blockquote) {
+  border-left: 3px solid #409eff;
+  padding-left: 12px;
+  color: #606266;
+  margin: 0.4em 0;
+}
+.skill-detail-content :deep(code) {
+  background: #e8eaed;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+.skill-detail-content :deep(pre) {
+  background: #e8eaed;
+  padding: 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+}
+.skill-detail-content :deep(pre code) {
+  background: none;
+  padding: 0;
+}
+.skill-detail-content :deep(table) {
+  border-collapse: collapse;
+  width: 100%;
+}
+.skill-detail-content :deep(th), .skill-detail-content :deep(td) {
+  border: 1px solid #dcdfe6;
+  padding: 6px 12px;
+  text-align: left;
+}
+.skill-detail-content :deep(th) { background: #f0f2f5; }
+.skill-detail-content :deep(img) { max-width: 100%; }
+.skill-detail-content :deep(a) { color: #409eff; }
 </style>

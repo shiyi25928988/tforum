@@ -36,7 +36,12 @@
           <el-input v-model="form.tags" placeholder="多个标签用逗号分隔，如：Python, 自动化" />
         </el-form-item>
         <el-form-item label="内容" required>
-          <el-input v-model="form.content" type="textarea" :rows="15" placeholder="Skill 的具体内容（可以是代码、提示词、配置等）" />
+          <md-editor
+            v-model="form.content"
+            :toolbars="skillToolbars"
+            :preview="true"
+            style="height: 300px"
+          />
         </el-form-item>
         <el-form-item label="附件">
           <div v-if="attachmentName" style="display: flex; align-items: center; gap: 8px">
@@ -73,6 +78,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { saveSkill, getSkill } from '@/api/skill'
 import { ElMessage } from 'element-plus'
 import { Close } from '@element-plus/icons-vue'
+import { MdEditor, type ToolbarNames } from 'md-editor-v3'
+import 'md-editor-v3/lib/style.css'
 
 const route = useRoute()
 const router = useRouter()
@@ -80,6 +87,14 @@ const isEdit = computed(() => !!route.params.id)
 const saving = ref(false)
 
 const categories = ['编程', '设计', '写作', '效率', 'AI', '数据分析', '其他']
+
+// 简单 md 工具栏
+const skillToolbars: ToolbarNames[] = [
+  'bold', 'italic', 'strikeThrough', '-',
+  'title', 'quote', 'unorderedList', 'orderedList', '-',
+  'codeRow', 'code', 'link', 'image', 'table', '-',
+  'preview',
+]
 
 const form = ref({
   name: '',
