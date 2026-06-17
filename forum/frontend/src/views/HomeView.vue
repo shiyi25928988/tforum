@@ -60,8 +60,8 @@
       </el-col>
       <el-col :span="8">
         <el-card header="热门标签" style="margin-bottom: 20px">
-          <el-tag v-for="tag in hotTags" :key="tag" style="margin: 4px" @click="searchByTag(tag)">
-            {{ tag }}
+          <el-tag v-for="tag in hotTags" :key="tag.id" style="margin: 4px" @click="searchByTag(tag.name)">
+            {{ tag.name }}
           </el-tag>
         </el-card>
         <el-card header="热门文章">
@@ -82,7 +82,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { searchArticles, listArticles, listHotArticles, type Article } from '@/api/article'
+import { searchArticles, listArticles, listHotArticles, listArticleTags, type Article, type ArticleTag } from '@/api/article'
 import { getUserById } from '@/api/user'
 import { formatTime } from '@/utils/format'
 import { Edit, Search } from '@element-plus/icons-vue'
@@ -95,7 +95,7 @@ const pageNum = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 const keyword = ref('')
-const hotTags = ref(['Vue', 'Java', 'Spring Boot', 'MyBatis', 'MySQL'])
+const hotTags = ref<ArticleTag[]>([])
 const authorNames = ref<Record<number, string>>({})
 const hotArticles = ref<(Article & { _rank: number })[]>([])
 
@@ -103,6 +103,13 @@ async function fetchHotArticles() {
   try {
     const res = await listHotArticles(10)
     hotArticles.value = (res.data.records || []).map((a: Article, i: number) => ({ ...a, _rank: i + 1 }))
+  } catch { /* */ }
+}
+
+async function fetchHotTags() {
+  try {
+    const res = await listArticleTags()
+    hotTags.value = res.data || []
   } catch { /* */ }
 }
 
@@ -140,7 +147,7 @@ function searchByTag(tag: string) {
   search()
 }
 
-onMounted(() => { fetchArticles(); fetchHotArticles() })
+onMounted(() => { fetchArticles(); fetchHotArticles(); fetchHotTags() })
 </script>
 
 <style scoped>

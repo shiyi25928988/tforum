@@ -3,9 +3,7 @@ version: "3.8"
 
 services:
   forum-backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: forum:latest
     container_name: forum-backend
     ports:
       - "8081:8081"
@@ -14,16 +12,16 @@ services:
       - SERVER_PORT=8081
       - SPRING_PROFILES_ACTIVE=dev
       # MySQL
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/tforum?createDatabaseIfNotExist=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_URL=jdbc:mysql://127.0.0.1:3306/tforum?createDatabaseIfNotExist=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=123456
       # Redis
-      - REDIS_HOST=redis
+      - REDIS_HOST=127.0.0.1
       - REDIS_PORT=6379
       - REDIS_PASSWORD=123456
       - REDIS_DATABASE=1
       # MinIO (可选)
-      - MINIO_HOST=minio
+      - MINIO_HOST=127.0.0.1
       - MINIO_PORT=9000
       - MINIO_BUCKET=tforum
       - MINIO_USERNAME=minioadmin
@@ -32,26 +30,21 @@ services:
       # Lucene
       - LUCENE_STORAGE_PATH=/data/lucene
       # AI / OpenAI (配置你的 API Key)
-      - SPRING_AI_OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode
-      - SPRING_AI_OPENAI_API_KEY=sk-your-key-here
-      - SPRING_AI_OPENAI_CHAT_MODEL=deepseek-v4-pro
-      - SPRING_AI_OPENAI_EMBEDDING_MODEL=text-embedding-v4
+      - SPRING_AI_OPENAI_BASE_URL=
+      - SPRING_AI_OPENAI_API_KEY=
+      - SPRING_AI_OPENAI_CHAT_MODEL=
+      - SPRING_AI_OPENAI_EMBEDDING_MODEL=
       # Milvus (可选)
-      - SPRING_AI_VECTORSTORE_MILVUS_CLIENT_HOST=milvus
+      - SPRING_AI_VECTORSTORE_MILVUS_CLIENT_HOST=127.0.0.1
       - SPRING_AI_VECTORSTORE_MILVUS_CLIENT_PORT=19530
       - SPRING_AI_VECTORSTORE_MILVUS_CLIENT_DATABASE_NAME=default
-      - SPRING_AI_VECTORSTORE_MILVUS_CLIENT_COLLECTION_NAME=vector_store
+      - SPRING_AI_VECTORSTORE_MILVUS_CLIENT_COLLECTION_NAME=tforum
     volumes:
       - lucene-data:/data/lucene
-    depends_on:
-      - mysql
-      - redis
     restart: unless-stopped
 
   forum-frontend:
-    build:
-      context: frontend
-      dockerfile: Dockerfile
+    image: forum-fe:latest
     container_name: forum-frontend
     ports:
       - "80:80"
@@ -59,26 +52,5 @@ services:
       - forum-backend
     restart: unless-stopped
 
-  mysql:
-    image: mysql:8.0
-    container_name: forum-mysql
-    ports:
-      - "3306:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: 123456
-      MYSQL_DATABASE: tforum
-    volumes:
-      - mysql-data:/var/lib/mysql
-    restart: unless-stopped
-
-  redis:
-    image: redis:7-alpine
-    container_name: forum-redis
-    ports:
-      - "6379:6379"
-    command: redis-server --requirepass 123456
-    restart: unless-stopped
-
 volumes:
-  mysql-data:
   lucene-data:
