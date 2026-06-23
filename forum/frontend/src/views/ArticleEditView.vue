@@ -99,7 +99,7 @@
         @keydown.ctrl.enter="handleAiGenerate"
       >
         <template #append>
-          <el-button :loading="aiLoading" @click="aiLoading ? undefined : handleAiGenerate()">
+          <el-button :loading="aiLoading" :disabled="aiLoading || reviewing" @click="handleAiGenerate()">
             {{ aiLoading ? '生成中...' : '生成' }}
           </el-button>
         </template>
