@@ -41,12 +41,49 @@
           <el-radio-button :value="0">草稿</el-radio-button>
         </el-radio-group>
         <el-button type="warning" :icon="MagicStick" @click="showAiDialog = true">AI 助手</el-button>
+        <el-button type="success" :icon="DocumentChecked" @click="handleAiReview" :loading="reviewing">AI 审核</el-button>
         <el-button type="primary" :icon="Check" @click="handleSave" :loading="saving">
           {{ isEdit ? '更新' : '提交' }}
         </el-button>
         <el-button :icon="Close" @click="handleCancel" style="color: #606266; border-color: #c0c4cc">取消</el-button>
       </div>
     </div>
+
+    <!-- AI 审核结果弹窗 -->
+    <el-dialog v-model="reviewDialogVisible" title="AI 文章审核结果" width="560px" destroy-on-close>
+      <div v-if="reviewResult" class="review-result">
+        <div class="review-status" :class="{ approved: reviewResult.approved, rejected: reviewResult.approved === false }">
+          <span v-if="reviewResult.approved === true">✅ 审核通过</span>
+          <span v-else-if="reviewResult.approved === false">❌ 审核未通过</span>
+          <span v-else>⚠️ 审核结果不确定</span>
+        </div>
+        <div class="review-score">
+          综合评分：<span class="score-num">{{ reviewResult.score }}</span> / 10
+          <el-progress :percentage="(reviewResult.score || 0) * 10" :color="scoreColor" :stroke-width="8" style="margin-top: 6px" />
+        </div>
+        <div class="review-feedback">
+          <h4>审核意见</h4>
+          <p>{{ reviewResult.feedback }}</p>
+        </div>
+        <div v-if="reviewResult.issues?.length" class="review-issues">
+          <h4>⚠️ 发现的问题</h4>
+          <ul>
+            <li v-for="(item, i) in reviewResult.issues" :key="'i' + i">{{ item }}</li>
+          </ul>
+        </div>
+        <div v-if="reviewResult.suggestions?.length" class="review-suggestions">
+          <h4>💡 改进建议</h4>
+          <ul>
+            <li v-for="(item, i) in reviewResult.suggestions" :key="'s' + i">{{ item }}</li>
+          </ul>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="reviewDialogVisible = false">关闭</el-button>
+        <el-button v-if="!reviewResult?.approved" type="primary" @click="reviewDialogVisible = false; doSave()">仍然发布</el-button>
+        <el-button v-else type="primary" @click="reviewDialogVisible = false">知道了</el-button>
+      </template>
+    </el-dialog>
 
     <!-- AI 助手内联区域 -->
     <div v-if="showAiDialog" class="ai-inline">
@@ -111,16 +148,44 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { saveArticle, getArticle, listArticleTags, saveArticleTag, type ArticleTag } from '@/api/article'
+import { saveArticle, getArticle, listArticleTags, saveArticleTag, reviewArticle, type ArticleTag, type AiReviewResponse } from '@/api/article'
 import { uploadToFolder } from '@/api/oss'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Check, Close, MagicStick, Plus, ArrowRight } from '@element-plus/icons-vue'
+import { Check, Close, MagicStick, Plus, ArrowRight, DocumentChecked } from '@element-plus/icons-vue'
 import { MdEditor, type ToolbarNames } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 const showAiDialog = ref(false)
 const aiPrompt = ref('')
 const aiLoading = ref(false)
 const aiContentBefore = ref('')
+
+// AI 审核
+const reviewing = ref(false)
+const reviewDialogVisible = ref(false)
+const reviewResult = ref<AiReviewResponse | null>(null)
+const scoreColor = computed(() => {
+  const s = reviewResult.value?.score || 0
+  if (s >= 8) return '#67c23a'
+  if (s >= 6) return '#e6a23c'
+  return '#f56c6c'
+})
+
+async function handleAiReview() {
+  if (!form.value.title.trim() && !form.value.content.trim()) {
+    ElMessage.warning('请先输入文章内容')
+    return
+  }
+  reviewing.value = true
+  try {
+    const res = await reviewArticle({ title: form.value.title, content: form.value.content })
+    reviewResult.value = res.data
+    reviewDialogVisible.value = true
+  } catch {
+    ElMessage.error('AI 审核失败，请稍后重试')
+  } finally {
+    reviewing.value = false
+  }
+}
 
 async function handleAiGenerate() {
   if (!aiPrompt.value.trim() || aiLoading.value) return
@@ -273,6 +338,37 @@ async function handleSave() {
     ElMessage.warning('请输入文章标题')
     return
   }
+
+  // 发布文章前先调用 AI 审核，草稿则直接保存
+  if (form.value.status === 1) {
+    await doReviewThenSave()
+  } else {
+    await doSave()
+  }
+}
+
+async function doReviewThenSave() {
+  reviewing.value = true
+  try {
+    const res = await reviewArticle({ title: form.value.title, content: form.value.content })
+    reviewResult.value = res.data
+    reviewDialogVisible.value = true
+
+    // 审核通过则自动保存，不通过则让用户确认是否仍要发布
+    if (res.data.approved) {
+      ElMessage.success('AI 审核通过，自动提交发布')
+      await doSave()
+    } else {
+      ElMessage.warning('AI 审核未通过，请查看审核意见后决定是否仍要发布')
+    }
+  } catch {
+    ElMessage.error('AI 审核失败，请稍后重试')
+  } finally {
+    reviewing.value = false
+  }
+}
+
+async function doSave() {
   // 新增标签自动保存到库
   if (selectedTags.value.length > 0) {
     for (const name of selectedTags.value) {
@@ -484,5 +580,44 @@ onMounted(() => { fetchTags(); fetchArticle() })
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+}
+
+/* AI 审核结果样式 */
+.review-result h4 {
+  margin: 12px 0 6px;
+  font-size: 14px;
+  color: #303133;
+}
+.review-status {
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f5f5f5;
+}
+.review-status.approved { background: #f0f9eb; color: #67c23a; }
+.review-status.rejected { background: #fef0f0; color: #f56c6c; }
+.review-score {
+  margin-top: 12px;
+  font-size: 14px;
+}
+.score-num {
+  font-size: 24px;
+  font-weight: 700;
+  color: #409eff;
+}
+.review-feedback p {
+  color: #606266;
+  line-height: 1.6;
+  margin: 0;
+}
+.review-issues ul, .review-suggestions ul {
+  margin: 0;
+  padding-left: 20px;
+}
+.review-issues li, .review-suggestions li {
+  color: #606266;
+  line-height: 1.8;
 }
 </style>

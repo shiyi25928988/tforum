@@ -2,6 +2,8 @@ package cc.shiyi.coleditor.forum.controller.article;
 
 import cc.shiyi.coleditor.common.http.ResponseWrapper;
 import cc.shiyi.coleditor.forum.request.ArticleRequest;
+import cc.shiyi.coleditor.forum.response.AiReviewResponse;
+import cc.shiyi.coleditor.forum.service.AiReviewService;
 import cc.shiyi.coleditor.forum.service.ArticleService;
 import cc.shiyi.coleditor.forum.table.Article;
 import cc.shiyi.coleditor.user.service.UserService;
@@ -21,6 +23,7 @@ public class ArticleController {
 
     private ArticleService articleService;
     private UserService userService;
+    private AiReviewService aiReviewService;
 
     @Operation(summary = "根据id获取文章")
     @GetMapping("/api/v1/article/{id}")
@@ -97,6 +100,13 @@ public class ArticleController {
             @RequestParam(defaultValue = "10") int limit) {
         return new ResponseWrapper<Page<Article>>().success(
                 articleService.listHot(limit));
+    }
+
+    @Operation(summary = "AI 审核文章内容")
+    @PostMapping("/api/v1/article/review")
+    public ResponseWrapper<AiReviewResponse> review(@RequestBody ArticleRequest request) {
+        return new ResponseWrapper<AiReviewResponse>().success(
+                aiReviewService.review(request.getTitle(), request.getContent()));
     }
 
 }

@@ -100,3 +100,19 @@ export function listMyArticles(pageNum = 1, pageSize = 10, status?: number) {
 export function toggleArticleStatus(id: number) {
   return request.post('/api/v1/article/toggleStatus', null, { params: { id } })
 }
+
+// ==========================================
+// AI 审核
+// ==========================================
+
+export interface AiReviewResponse {
+  approved: boolean | null
+  score: number
+  feedback: string
+  suggestions: string[]
+  issues: string[]
+}
+
+export function reviewArticle(data: { title: string; content: string }) {
+  return request.post('/api/v1/article/review', data)
+}
