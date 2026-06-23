@@ -1,7 +1,7 @@
 <template>
   <div class="editor-page">
     <!-- AI 生成进度条 -->
-    <div v-if="aiLoading" class="ai-progress-bar" />
+    <div v-if="aiLoading || reviewing" class="ai-progress-bar" />
     <!-- 顶部工具栏 -->
     <div class="editor-topbar">
       <el-input
@@ -9,6 +9,7 @@
         placeholder="请输入文章标题..."
         class="title-input"
         size="large"
+        :disabled="aiLoading || reviewing"
       />
       <el-input
         v-model="form.summary"
@@ -16,6 +17,7 @@
         class="summary-input"
         size="small"
         clearable
+        :disabled="aiLoading || reviewing"
       />
       <div class="topbar-actions">
         <el-select
@@ -28,6 +30,7 @@
           size="small"
           style="width: 220px"
           clearable
+          :disabled="aiLoading || reviewing"
         >
           <el-option
             v-for="tag in articleTags"
@@ -36,16 +39,16 @@
             :value="tag.name"
           />
         </el-select>
-        <el-radio-group v-model="form.status" size="small">
+        <el-radio-group v-model="form.status" size="small" :disabled="aiLoading || reviewing">
           <el-radio-button :value="1">发布</el-radio-button>
           <el-radio-button :value="0">草稿</el-radio-button>
         </el-radio-group>
-        <el-button type="warning" :icon="MagicStick" @click="showAiDialog = true">AI 助手</el-button>
-        <el-button type="success" :icon="DocumentChecked" @click="handleAiReview" :loading="reviewing">AI 审核</el-button>
-        <el-button type="primary" :icon="Check" @click="handleSave" :loading="saving">
+        <el-button type="warning" :icon="MagicStick" :disabled="aiLoading || reviewing" @click="showAiDialog = true">AI 助手</el-button>
+        <el-button type="success" :icon="DocumentChecked" :disabled="aiLoading || reviewing" :loading="reviewing" @click="handleAiReview">AI 审核</el-button>
+        <el-button type="primary" :icon="Check" :disabled="aiLoading || reviewing" :loading="saving" @click="handleSave">
           {{ isEdit ? '更新' : '提交' }}
         </el-button>
-        <el-button :icon="Close" @click="handleCancel" style="color: #606266; border-color: #c0c4cc">取消</el-button>
+        <el-button :icon="Close" :disabled="aiLoading || reviewing" @click="handleCancel" style="color: #606266; border-color: #c0c4cc">取消</el-button>
       </div>
     </div>
 
@@ -92,6 +95,7 @@
         placeholder="描述你想写的内容，例如：帮我写一篇 Spring Boot 微服务架构的技术文章..."
         class="ai-input"
         clearable
+        :disabled="aiLoading || reviewing"
         @keydown.ctrl.enter="handleAiGenerate"
       >
         <template #append>
@@ -121,15 +125,15 @@
           <div v-if="coverPreview" class="cover-preview">
             <el-image :src="coverPreview" fit="cover" style="width: 240px; height: 135px; border-radius: 4px" />
             <div class="cover-actions">
-              <el-button size="small" @click="triggerCoverUpload">更换</el-button>
-              <el-button size="small" type="danger" @click="removeCover">移除</el-button>
+              <el-button size="small" :disabled="aiLoading || reviewing" @click="triggerCoverUpload">更换</el-button>
+              <el-button size="small" type="danger" :disabled="aiLoading || reviewing" @click="removeCover">移除</el-button>
             </div>
           </div>
-          <div v-else class="cover-placeholder" @click="triggerCoverUpload">
+          <div v-else class="cover-placeholder" :class="{ disabled: aiLoading || reviewing }" @click="aiLoading || reviewing ? undefined : triggerCoverUpload()">
             <el-icon :size="20"><Plus /></el-icon>
             <span>点击上传封面图片</span>
           </div>
-          <input ref="coverInputRef" type="file" accept="image/*" style="display: none" @change="handleCoverFileChange" />
+          <input ref="coverInputRef" type="file" accept="image/*" style="display: none" :disabled="aiLoading || reviewing" @change="handleCoverFileChange" />
         </div>
       </div>
       <md-editor
@@ -137,6 +141,7 @@
         v-model="form.content"
         :toolbars="toolbars"
         :preview="true"
+        :disabled="aiLoading || reviewing"
         :footers="['markdownTotal']"
         style="height: 100%"
         :on-upload-img="handleUploadImg"
@@ -562,6 +567,10 @@ onMounted(() => { fetchTags(); fetchArticle() })
 .cover-placeholder:hover {
   border-color: #409eff;
   color: #409eff;
+}
+.cover-placeholder.disabled {
+  pointer-events: none;
+  opacity: 0.5;
 }
 .ai-inline {
   padding: 10px 16px;
