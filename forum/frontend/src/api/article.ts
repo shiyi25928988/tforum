@@ -102,7 +102,7 @@ export function toggleArticleStatus(id: number) {
 }
 
 // ==========================================
-// AI 审核
+// AI 审核（异步提交 + 轮询）
 // ==========================================
 
 export interface AiReviewResponse {
@@ -113,6 +113,17 @@ export interface AiReviewResponse {
   issues: string[]
 }
 
-export function reviewArticle(data: { title: string; content: string }) {
+export interface AiReviewTaskResponse {
+  taskId: string
+  status: string
+}
+
+/** 提交审核任务，返回任务 ID */
+export function submitReview(data: { title: string; content: string }) {
   return request.post('/api/v1/article/review', data)
+}
+
+/** 轮询审核结果，data 为 null 表示还在处理中 */
+export function getReviewResult(taskId: string) {
+  return request.get('/api/v1/article/review/result', { params: { taskId } })
 }

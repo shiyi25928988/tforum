@@ -153,7 +153,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { saveArticle, getArticle, listArticleTags, saveArticleTag, reviewArticle, type ArticleTag, type AiReviewResponse } from '@/api/article'
+import { saveArticle, getArticle, listArticleTags, saveArticleTag, submitReview, getReviewResult, type ArticleTag, type AiReviewResponse } from '@/api/article'
 import { uploadToFolder } from '@/api/oss'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Check, Close, MagicStick, Plus, ArrowRight, DocumentChecked } from '@element-plus/icons-vue'
@@ -175,6 +175,35 @@ const scoreColor = computed(() => {
   return '#f56c6c'
 })
 
+const POLL_INTERVAL = 1500   // 轮询间隔（毫秒）
+const POLL_TIMEOUT = 60_000  // 轮询超时（毫秒）
+
+/**
+ * 提交审核任务并轮询结果。超时或失败时 resolve(null)。
+ */
+async function submitAndPoll(title: string, content: string): Promise<AiReviewResponse | null> {
+  try {
+    const submitRes = await submitReview({ title, content })
+    const taskId = submitRes.data?.taskId
+    if (!taskId) return null
+
+    const start = Date.now()
+    while (Date.now() - start < POLL_TIMEOUT) {
+      await new Promise(r => setTimeout(r, POLL_INTERVAL))
+      try {
+        const pollRes = await getReviewResult(taskId)
+        if (pollRes.data) return pollRes.data  // 有结果了
+      } catch {
+        // 轮询请求失败，继续重试
+      }
+    }
+    // 超时
+    return null
+  } catch {
+    return null
+  }
+}
+
 async function handleAiReview() {
   if (!form.value.title.trim() && !form.value.content.trim()) {
     ElMessage.warning('请先输入文章内容')
@@ -182,11 +211,13 @@ async function handleAiReview() {
   }
   reviewing.value = true
   try {
-    const res = await reviewArticle({ title: form.value.title, content: form.value.content })
-    reviewResult.value = res.data
-    reviewDialogVisible.value = true
-  } catch {
-    ElMessage.error('AI 审核失败，请稍后重试')
+    const result = await submitAndPoll(form.value.title, form.value.content)
+    if (result) {
+      reviewResult.value = result
+      reviewDialogVisible.value = true
+    } else {
+      ElMessage.error('AI 审核超时，请稍后重试')
+    }
   } finally {
     reviewing.value = false
   }
@@ -355,19 +386,21 @@ async function handleSave() {
 async function doReviewThenSave() {
   reviewing.value = true
   try {
-    const res = await reviewArticle({ title: form.value.title, content: form.value.content })
-    reviewResult.value = res.data
+    const result = await submitAndPoll(form.value.title, form.value.content)
+    if (!result) {
+      ElMessage.error('AI 审核超时，请稍后重试或保存为草稿')
+      return
+    }
+    reviewResult.value = result
     reviewDialogVisible.value = true
 
     // 审核通过则自动保存，不通过则让用户确认是否仍要发布
-    if (res.data.approved) {
+    if (result.approved) {
       ElMessage.success('AI 审核通过，自动提交发布')
       await doSave()
     } else {
       ElMessage.warning('AI 审核未通过，请查看审核意见后决定是否仍要发布')
     }
-  } catch {
-    ElMessage.error('AI 审核失败，请稍后重试')
   } finally {
     reviewing.value = false
   }

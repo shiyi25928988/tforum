@@ -2,21 +2,28 @@ package cc.shiyi.coleditor.forum.service;
 
 import cc.shiyi.coleditor.common.ai.config.ChantClientPool;
 import cc.shiyi.coleditor.forum.response.AiReviewResponse;
+import cc.shiyi.coleditor.forum.response.AiReviewTaskResponse;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * AI 文章审核发布服务
  * 使用 AI 对文章内容进行质量审核，包括内容规范检查、可读性评估、改进建议等
+ * <p>
+ * 采用异步提交 + 轮询模式：提交审核后立即返回任务 ID，前端轮询获取结果，
+ * 避免超长文章审核时 HTTP 请求超时。
  */
 @Slf4j
 @Service
@@ -24,6 +31,14 @@ import java.util.regex.Pattern;
 public class AiReviewService {
 
     private ChantClientPool chatClientPool;
+
+    /** 审核任务结果缓存，taskId → 结果（PENDING 时 value 为 null） */
+    private final Map<String, AiReviewResponse> taskResults = new ConcurrentHashMap<>();
+
+    /** 任务状态常量 */
+    private static final AiReviewResponse PENDING = AiReviewResponse.builder()
+            .approved(null).score(-1).feedback("审核进行中...")
+            .suggestions(List.of()).issues(List.of()).build();
 
     private static final String REVIEW_SYSTEM_PROMPT = """
             你是一位专业的技术文章审核编辑，负责审核即将发布到技术社区的文章。
@@ -52,16 +67,24 @@ public class AiReviewService {
             """;
 
     /**
-     * 审核文章内容，返回审核结果
+     * 提交审核任务，立即返回任务 ID。前端通过轮询 {@link #getResult} 获取结果。
      */
-    public AiReviewResponse review(String title, String content) {
-        String conversationId = "review-" + UUID.randomUUID().toString().substring(0, 8);
-        ChatClient chatClient = chatClientPool.get(conversationId);
+    public AiReviewTaskResponse submit(String title, String content) {
+        String taskId = "review-" + UUID.randomUUID().toString().substring(0, 8);
+        taskResults.put(taskId, PENDING);
+        log.info("AiReviewService: task submitted, taskId={}, title={}, contentLength={}",
+                taskId, title, content != null ? content.length() : 0);
+        executeAsync(taskId, title, content);
+        return AiReviewTaskResponse.builder().taskId(taskId).status("PENDING").build();
+    }
 
+    /**
+     * 异步执行审核，结果写入 taskResults。
+     */
+    @Async
+    public void executeAsync(String taskId, String title, String content) {
+        ChatClient chatClient = chatClientPool.get(taskId);
         String userMessage = buildReviewPrompt(title, content);
-
-        log.info("AiReviewService: reviewing article title={}, contentLength={}", title,
-                content != null ? content.length() : 0);
 
         try {
             String response = chatClient.prompt()
@@ -70,34 +93,56 @@ public class AiReviewService {
                     .call()
                     .content();
 
-            log.info("AiReviewService: raw response length={}", response != null ? response.length() : 0);
-            return parseReviewResponse(response);
+            log.info("AiReviewService: taskId={} completed, response length={}",
+                    taskId, response != null ? response.length() : 0);
+            taskResults.put(taskId, parseReviewResponse(response));
         } catch (Exception e) {
-            log.error("AiReviewService: review failed", e);
-            return AiReviewResponse.builder()
+            log.error("AiReviewService: taskId={} failed", taskId, e);
+            taskResults.put(taskId, AiReviewResponse.builder()
                     .approved(null)
                     .score(0)
                     .feedback("AI 审核服务异常: " + e.getMessage())
                     .suggestions(List.of("请稍后重试审核"))
                     .issues(List.of())
-                    .build();
+                    .build());
         }
     }
 
     /**
-     * 流式审核 - 用于前端实时展示审核过程
+     * 轮询获取审核结果。返回 null 表示还在进行中。
      */
-    public AiReviewResponse reviewStream(String title, String content) {
-        // 流式场景下直接调用 review，ChatClient 内部处理流式
-        return review(title, content);
+    public AiReviewResponse getResult(String taskId) {
+        AiReviewResponse result = taskResults.get(taskId);
+        if (result == null) {
+            return null; // 任务不存在
+        }
+        if (result == PENDING || result.getScore() != null && result.getScore() == -1) {
+            return null; // 还在处理中
+        }
+        // 取完后清理，防止内存泄漏
+        taskResults.remove(taskId);
+        return result;
     }
 
+    /**
+     * 构建审核提示词。
+     * <p>
+     * 注：token 截断功能暂时关闭，直接使用完整内容。
+     * 如需重新启用，取消下方注释即可。中文字符约 1.5-2 tokens/字，英文约 0.25-0.3 tokens/字符。
+     */
     private String buildReviewPrompt(String title, String content) {
-        // 截取前 8000 字作为审核样本（防止超长文章超出 token 限制）
-        String truncatedContent = content;
-        if (content != null && content.length() > 8000) {
-            truncatedContent = content.substring(0, 8000) + "\n\n...(文章过长，以上为前8000字内容)";
-        }
+        // === token 截断功能暂时关闭 ===
+        // final int MAX_CONTENT_TOKENS = 5000;
+        // String truncatedContent = truncateByTokenEstimate(
+        //         content != null ? content : "",
+        //         MAX_CONTENT_TOKENS
+        // );
+        // boolean wasTruncated = content != null && !content.equals(truncatedContent);
+        // --- 直接使用完整内容 ---
+        String truncatedContent = content != null ? content : "";
+        boolean wasTruncated = false;
+
+        log.info("truncatedContent length : " + truncatedContent.length());
 
         return String.format("""
                 请审核以下文章：
@@ -105,8 +150,57 @@ public class AiReviewService {
                 **标题**：%s
 
                 **内容**：
-                %s
-                """, title != null ? title : "无标题", truncatedContent);
+                %s%s
+                """,
+                title != null ? title : "无标题",
+                truncatedContent,
+                wasTruncated ? "\n\n（提示：文章过长，以上为截取的前半部分内容）" : ""
+        );
+    }
+
+    /**
+     * 根据 token 估算值截断文本。
+     * 使用简单启发式：CJK 字符 ≈ 1.5 token，ASCII 字符 ≈ 0.3 token，其他 ≈ 1 token。
+     */
+    static String truncateByTokenEstimate(String text, int maxTokens) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+
+        double estimatedTokens = 0;
+        int cutIndex = text.length();
+
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            // CJK 统一表意文字（含中文、日文汉字）+ 全角标点
+            if (Character.UnicodeBlock.of(c) == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS
+                    || Character.UnicodeBlock.of(c) == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS_EXTENSION_A
+                    || Character.UnicodeBlock.of(c) == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS_EXTENSION_B
+                    || Character.UnicodeBlock.of(c) == Character.UnicodeBlock.CJK_SYMBOLS_AND_PUNCTUATION
+                    || Character.UnicodeBlock.of(c) == Character.UnicodeBlock.HALFWIDTH_AND_FULLWIDTH_FORMS
+                    || Character.UnicodeBlock.of(c) == Character.UnicodeBlock.CJK_COMPATIBILITY_IDEOGRAPHS
+                    || Character.UnicodeBlock.of(c) == Character.UnicodeBlock.GENERAL_PUNCTUATION
+                    || Character.UnicodeBlock.of(c) == Character.UnicodeBlock.CJK_COMPATIBILITY_FORMS) {
+                estimatedTokens += 1.5;
+            } else if (c < 128) {
+                // ASCII（英文、数字、基本标点）
+                estimatedTokens += 0.3;
+            } else {
+                // 其他 Unicode 字符（emoji、特殊符号等）
+                estimatedTokens += 1.0;
+            }
+
+            if (estimatedTokens >= maxTokens) {
+                cutIndex = i + 1;
+                break;
+            }
+        }
+
+        if (estimatedTokens < maxTokens) {
+            return text; // 不需要截断
+        }
+
+        return text.substring(0, cutIndex);
     }
 
     /**

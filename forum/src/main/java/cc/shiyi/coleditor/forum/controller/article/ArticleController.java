@@ -3,6 +3,7 @@ package cc.shiyi.coleditor.forum.controller.article;
 import cc.shiyi.coleditor.common.http.ResponseWrapper;
 import cc.shiyi.coleditor.forum.request.ArticleRequest;
 import cc.shiyi.coleditor.forum.response.AiReviewResponse;
+import cc.shiyi.coleditor.forum.response.AiReviewTaskResponse;
 import cc.shiyi.coleditor.forum.service.AiReviewService;
 import cc.shiyi.coleditor.forum.service.ArticleService;
 import cc.shiyi.coleditor.forum.table.Article;
@@ -102,11 +103,22 @@ public class ArticleController {
                 articleService.listHot(limit));
     }
 
-    @Operation(summary = "AI 审核文章内容")
+    @Operation(summary = "提交 AI 审核任务（异步），返回任务 ID 用于轮询")
     @PostMapping("/api/v1/article/review")
-    public ResponseWrapper<AiReviewResponse> review(@RequestBody ArticleRequest request) {
-        return new ResponseWrapper<AiReviewResponse>().success(
-                aiReviewService.review(request.getTitle(), request.getContent()));
+    public ResponseWrapper<AiReviewTaskResponse> review(@RequestBody ArticleRequest request) {
+        return new ResponseWrapper<AiReviewTaskResponse>().success(
+                aiReviewService.submit(request.getTitle(), request.getContent()));
+    }
+
+    @Operation(summary = "轮询 AI 审核结果，未完成时返回 null data")
+    @GetMapping("/api/v1/article/review/result")
+    public ResponseWrapper<AiReviewResponse> reviewResult(@RequestParam String taskId) {
+        AiReviewResponse result = aiReviewService.getResult(taskId);
+        if (result == null) {
+            // 返回 code=0, data=null 表示任务还未完成，前端继续轮询
+            return new ResponseWrapper<AiReviewResponse>().success();
+        }
+        return new ResponseWrapper<AiReviewResponse>().success(result);
     }
 
 }
