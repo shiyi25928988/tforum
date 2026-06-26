@@ -9,6 +9,11 @@ import router from './router'
 import './styles/main.css'
 import './styles/themes.css'
 
+import { siteConfig } from './config/site'
+
+// 设置浏览器标签页标题
+document.title = siteConfig.htmlTitle
+
 // ========================================
 // md-editor-v3 本地化配置：将所有 CDN 资源替换为本地路径
 // 内网环境无法访问 unpkg.com，必须打包到前端

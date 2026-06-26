@@ -3,9 +3,9 @@
     <div class="auth-bg"></div>
     <el-card class="auth-card" shadow="always">
       <div class="auth-logo">
-        <span class="logo-icon">F</span>
-        <h1>tForum</h1>
-        <p class="subtitle">开发者社区</p>
+        <span class="logo-icon">{{ siteConfig.logoIcon }}</span>
+        <h1>{{ siteConfig.loginTitle }}</h1>
+        <p class="subtitle">{{ siteConfig.subtitle }}</p>
       </div>
       <el-form
         ref="formRef"
@@ -63,6 +63,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
+import { siteConfig } from '@/config/site'
 
 const router = useRouter()
 const userStore = useUserStore()

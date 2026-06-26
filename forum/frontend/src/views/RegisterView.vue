@@ -3,9 +3,9 @@
     <div class="auth-bg"></div>
     <el-card class="auth-card" shadow="always">
       <div class="auth-logo">
-        <span class="logo-icon">F</span>
-        <h1>加入 tForum</h1>
-        <p class="subtitle">注册账号，开始交流</p>
+        <span class="logo-icon">{{ siteConfig.logoIcon }}</span>
+        <h1>{{ siteConfig.registerTitle }}</h1>
+        <p class="subtitle">{{ siteConfig.registerDesc }}</p>
       </div>
       <el-form
         ref="formRef"
@@ -75,6 +75,7 @@ import { register } from '@/api/user'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { encode } from '@/utils/crypto'
 import { User, EditPen, Lock } from '@element-plus/icons-vue'
+import { siteConfig } from '@/config/site'
 
 const router = useRouter()
 const formRef = ref<FormInstance>()

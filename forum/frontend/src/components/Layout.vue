@@ -1,7 +1,7 @@
 <template>
   <el-container class="layout">
     <el-header class="header">
-      <div class="logo" @click="$router.push('/')">tForum</div>
+      <div class="logo" @click="$router.push('/')">{{ siteName }}</div>
       <el-menu
         :default-active="activeMenu"
         mode="horizontal"
@@ -70,6 +70,9 @@ import { useUserStore } from '@/stores/user'
 import { useThemeStore } from '@/stores/theme'
 import { ElMessage } from 'element-plus'
 import multiavatar from '@multiavatar/multiavatar'
+import { siteConfig } from '@/config/site'
+
+const siteName = siteConfig.name
 
 const route = useRoute()
 const router = useRouter()
