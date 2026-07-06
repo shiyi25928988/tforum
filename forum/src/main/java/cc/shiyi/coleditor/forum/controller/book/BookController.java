@@ -5,6 +5,7 @@ import cc.shiyi.coleditor.forum.service.BookService;
 import cc.shiyi.coleditor.forum.table.Book;
 import cc.shiyi.coleditor.user.service.UserService;
 import cc.shiyi.oss.common.UploadService;
+import cc.shiyi.oss.utils.MinioUrlUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Setter;
@@ -110,6 +111,6 @@ public class BookController {
     public ResponseWrapper<?> download(@RequestParam Long id) {
         bookService.increaseDownload(id);
         Book book = bookService.getById(id);
-        return new ResponseWrapper<String>().success(book.getFileUrl(), "");
+        return new ResponseWrapper<String>().success(MinioUrlUtil.toProxyUrl(book.getFileUrl()), "");
     }
 }

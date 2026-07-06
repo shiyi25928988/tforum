@@ -1,7 +1,9 @@
 package cc.shiyi.coleditor.forum.table;
 
 import cc.shiyi.coleditor.markdown.table.BaseTable;
+import cc.shiyi.oss.http.MinioUrlSerializer;
 import com.baomidou.mybatisplus.annotation.*;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -23,6 +25,7 @@ public class Article extends BaseTable {
     @TableField("summary")
     private String summary;
 
+    @JsonSerialize(using = MinioUrlSerializer.class)
     @TableField("cover_image")
     private String coverImage;
 

@@ -1,6 +1,9 @@
 package cc.shiyi.oss.items;
 
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import cc.shiyi.oss.http.MinioUrlSerializer;
+
 /**
  * @program: object-saved-tool
  * @description:
@@ -12,6 +15,7 @@ public class FileItem {
     private String name;
     private String bucket;
     private String folderName;
+    @JsonSerialize(using = MinioUrlSerializer.class)
     private String downloadUrl;
     private boolean isFolder;
     private long size;

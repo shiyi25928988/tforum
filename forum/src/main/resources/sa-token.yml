@@ -22,6 +22,7 @@ sa-token:
     - /api/v1/book/list
     - /api/v1/book/*
     - /api/v1/book/download
+    - /api/v1/oss/file
     - /api/v1/ai/simpleChat
     - /api/v1/ai/chat
   alone-redis:

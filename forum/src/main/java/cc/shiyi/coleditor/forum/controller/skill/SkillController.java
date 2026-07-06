@@ -5,6 +5,7 @@ import cc.shiyi.coleditor.forum.service.SkillService;
 import cc.shiyi.coleditor.forum.table.Skill;
 import cc.shiyi.coleditor.user.service.UserService;
 import cc.shiyi.oss.common.UploadService;
+import cc.shiyi.oss.utils.MinioUrlUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Setter;
@@ -107,6 +108,6 @@ public class SkillController {
     public ResponseWrapper<?> download(@RequestParam Long id) {
         skillService.increaseDownload(id);
         Skill skill = skillService.getById(id);
-        return new ResponseWrapper<String>().success(skill.getAttachmentUrl(),"");
+        return new ResponseWrapper<String>().success(MinioUrlUtil.toProxyUrl(skill.getAttachmentUrl()),"");
     }
 }
