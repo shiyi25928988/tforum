@@ -143,3 +143,34 @@ export function adminSaveDiscussionCategory(data: DiscussionCategory) {
 export function adminDeleteDiscussionCategory(id: number) {
   return request.post('/api/v1/discussion/category/delete', null, { params: { id } })
 }
+
+// ==========================================
+// 导航栏管理
+// ==========================================
+
+export interface NavItem {
+  id?: number
+  name: string
+  url: string
+  icon?: string
+  type?: string
+  isVisible?: number
+  sortOrder?: number
+  isSystem?: number
+}
+
+export function adminListNavItems() {
+  return request.get('/api/v1/admin/nav/list')
+}
+
+export function adminSaveNavItem(data: NavItem) {
+  return request.post('/api/v1/admin/nav/save', data)
+}
+
+export function adminToggleNavVisible(id: number) {
+  return request.post('/api/v1/admin/nav/toggleVisible', null, { params: { id } })
+}
+
+export function adminDeleteNavItem(id: number) {
+  return request.post('/api/v1/admin/nav/delete', null, { params: { id } })
+}

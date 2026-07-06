@@ -5,13 +5,26 @@
       <el-menu
         :default-active="activeMenu"
         mode="horizontal"
-        router
         class="nav-menu"
       >
-        <el-menu-item index="/home">首页</el-menu-item>
-        <el-menu-item index="/forum">讨论区</el-menu-item>
-        <el-menu-item index="/skills">Skills</el-menu-item>
-        <el-menu-item index="/books">图书角</el-menu-item>
+        <template v-for="item in navItems" :key="item.id">
+          <el-menu-item
+            v-if="item.type === 'internal'"
+            :index="item.url"
+            @click="handleNavClick(item)"
+          >
+            <span v-if="item.icon" style="margin-right: 4px">{{ item.icon }}</span>
+            {{ item.name }}
+          </el-menu-item>
+          <el-menu-item
+            v-else
+            :index="'ext-' + item.id"
+            @click="openExternal(item.url)"
+          >
+            <span v-if="item.icon" style="margin-right: 4px">{{ item.icon }}</span>
+            {{ item.name }}
+          </el-menu-item>
+        </template>
       </el-menu>
       <div class="user-area">
         <!-- 主题切换 -->
@@ -64,13 +77,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useThemeStore } from '@/stores/theme'
 import { ElMessage } from 'element-plus'
 import multiavatar from '@multiavatar/multiavatar'
 import { siteConfig } from '@/config/site'
+import { getNavList, type NavItem } from '@/api/nav'
 
 const siteName = siteConfig.name
 
@@ -78,6 +92,23 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const themeStore = useThemeStore()
+
+const navItems = ref<NavItem[]>([])
+
+onMounted(async () => {
+  try {
+    const r = await getNavList()
+    navItems.value = (r as any).data || []
+  } catch { /* keep defaults */ }
+})
+
+function handleNavClick(item: NavItem) {
+  router.push(item.url)
+}
+
+function openExternal(url: string) {
+  window.open(url, '_blank')
+}
 
 const themeIcon = computed(() => {
   switch (themeStore.current.value) {
@@ -96,8 +127,12 @@ const avatarSrc = computed(() => {
 
 const activeMenu = computed(() => {
   const path = route.path
+  for (const item of navItems.value) {
+    if (item.type === 'internal' && item.url !== '/' && path.startsWith(item.url)) {
+      return item.url
+    }
+  }
   if (path.startsWith('/article')) return '/home'
-  if (path.startsWith('/forum')) return '/forum'
   return '/home'
 })
 

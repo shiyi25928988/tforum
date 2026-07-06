@@ -33,6 +33,7 @@ const router = createRouter({
         { path: 'books', component: () => import('@/views/admin/AdminBooks.vue') },
         { path: 'tags', component: () => import('@/views/admin/AdminTags.vue') },
         { path: 'milvus', component: () => import('@/views/admin/AdminMilvus.vue') },
+        { path: 'nav', component: () => import('@/views/admin/AdminNav.vue') },
         { path: 'skills', component: () => import('@/views/admin/AdminSkills.vue') },
       ],
     },

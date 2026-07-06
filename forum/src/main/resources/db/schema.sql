@@ -213,6 +213,24 @@ CREATE TABLE IF NOT EXISTS SPRING_AI_CHAT_MEMORY (
 );
 
 -- =============================================
+-- 导航栏配置表
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS `nav_item` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `name` VARCHAR(100) NOT NULL COMMENT '栏目名称',
+    `url` VARCHAR(500) NOT NULL COMMENT '链接URL（内部路由或外部完整链接）',
+    `icon` VARCHAR(255) DEFAULT NULL COMMENT '图标（可选）',
+    `type` VARCHAR(20) DEFAULT 'internal' COMMENT '类型: internal=内部路由, external=外部链接',
+    `is_visible` TINYINT(1) DEFAULT 1 COMMENT '是否显示: 0=隐藏, 1=显示',
+    `sort_order` INT DEFAULT 0 COMMENT '排序（越小越靠前）',
+    `is_system` TINYINT(1) DEFAULT 0 COMMENT '是否系统内置: 0=自定义, 1=系统内置',
+    PRIMARY KEY (`id`),
+    KEY `idx_visible` (`is_visible`),
+    KEY `idx_sort` (`sort_order`)
+) ENGINE=InnoDB COMMENT='导航栏配置表';
+
+-- =============================================
 -- 文章向量记录表
 -- =============================================
 

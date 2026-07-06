@@ -12,7 +12,9 @@ import cc.shiyi.coleditor.forum.table.Article;
 import cc.shiyi.coleditor.forum.table.ArticleTag;
 import cc.shiyi.coleditor.forum.table.ArticleVectorRecord;
 import cc.shiyi.coleditor.forum.table.Book;
+import cc.shiyi.coleditor.forum.mapper.NavItemMapper;
 import cc.shiyi.coleditor.forum.mapper.SkillMapper;
+import cc.shiyi.coleditor.forum.table.NavItem;
 import cc.shiyi.coleditor.forum.table.Skill;
 import cc.shiyi.coleditor.forum.table.ForumPost;
 import cc.shiyi.coleditor.user.mapper.UserMapper;
@@ -49,6 +51,7 @@ public class AdminController {
     private ArticleVectorRecordMapper articleVectorRecordMapper;
     private MilvusClient milvusClient;
     private Environment environment;
+    private NavItemMapper navItemMapper;
 
     private String getMilvusCollectionName() {
         return environment.getProperty("spring.ai.vectorstore.milvus.client.collection-name", "vector_store");
@@ -400,5 +403,104 @@ public class AdminController {
             articleVectorRecordMapper.delete(qw);
         }
         return new ResponseWrapper<>().success("已从向量库删除 " + articleIds.size() + " 篇文章");
+    }
+
+    // ============================
+    // 导航栏管理
+    // ============================
+
+    @Operation(summary = "获取导航栏所有栏目")
+    @GetMapping("/api/v1/admin/nav/list")
+    public ResponseWrapper<List<NavItem>> listNavItems() {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return (ResponseWrapper<List<NavItem>>) check;
+        QueryWrapper<NavItem> qw = new QueryWrapper<>();
+        qw.orderByAsc("sort_order");
+        return new ResponseWrapper<List<NavItem>>().success(navItemMapper.selectList(qw));
+    }
+
+    @Operation(summary = "保存导航栏目（新增或更新）")
+    @PostMapping("/api/v1/admin/nav/save")
+    public ResponseWrapper<?> saveNavItem(@RequestBody NavItem item) {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return check;
+
+        if (item.getId() != null) {
+            // 更新已有栏目
+            NavItem existing = navItemMapper.selectById(item.getId());
+            if (existing == null) {
+                return new ResponseWrapper<>().fail("栏目不存在");
+            }
+            // 系统内置栏目：只允许修改 is_visible 和 sort_order
+            if (existing.getIsSystem() != null && existing.getIsSystem() == 1) {
+                // 首页（sort_order=1）始终可见
+                if (existing.getSortOrder() == 1) {
+                    existing.setIsVisible(1);
+                } else {
+                    existing.setIsVisible(item.getIsVisible() != null ? item.getIsVisible() : existing.getIsVisible());
+                }
+                existing.setSortOrder(item.getSortOrder() != null ? item.getSortOrder() : existing.getSortOrder());
+                existing.setIcon(item.getIcon());
+            } else {
+                // 自定义栏目：完整更新
+                existing.setName(item.getName());
+                existing.setUrl(item.getUrl());
+                existing.setIcon(item.getIcon());
+                existing.setType(item.getType() != null ? item.getType() : "external");
+                existing.setIsVisible(item.getIsVisible() != null ? item.getIsVisible() : 1);
+                existing.setSortOrder(item.getSortOrder() != null ? item.getSortOrder() : 99);
+            }
+            navItemMapper.updateById(existing);
+        } else {
+            // 新增自定义栏目
+            if (item.getName() == null || item.getName().isEmpty()) {
+                return new ResponseWrapper<>().fail("栏目名称不能为空");
+            }
+            if (item.getUrl() == null || item.getUrl().isEmpty()) {
+                return new ResponseWrapper<>().fail("栏目链接不能为空");
+            }
+            item.setType(item.getType() != null ? item.getType() : "external");
+            item.setIsSystem(0);
+            item.setIsVisible(item.getIsVisible() != null ? item.getIsVisible() : 1);
+            item.setSortOrder(item.getSortOrder() != null ? item.getSortOrder() : 99);
+            navItemMapper.insert(item);
+        }
+        return new ResponseWrapper<>().success();
+    }
+
+    @Operation(summary = "切换导航栏目显隐")
+    @PostMapping("/api/v1/admin/nav/toggleVisible")
+    public ResponseWrapper<?> toggleNavVisible(@RequestParam Long id) {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return check;
+
+        NavItem item = navItemMapper.selectById(id);
+        if (item == null) {
+            return new ResponseWrapper<>().fail("栏目不存在");
+        }
+        // 首页始终可见，不允许切换
+        if (item.getIsSystem() != null && item.getIsSystem() == 1 && item.getSortOrder() == 1) {
+            return new ResponseWrapper<>().fail("首页不可隐藏");
+        }
+        item.setIsVisible(item.getIsVisible() == 1 ? 0 : 1);
+        navItemMapper.updateById(item);
+        return new ResponseWrapper<>().success();
+    }
+
+    @Operation(summary = "删除导航栏目（仅自定义栏目）")
+    @PostMapping("/api/v1/admin/nav/delete")
+    public ResponseWrapper<?> deleteNavItem(@RequestParam Long id) {
+        ResponseWrapper<?> check = checkAdmin();
+        if (check != null) return check;
+
+        NavItem item = navItemMapper.selectById(id);
+        if (item == null) {
+            return new ResponseWrapper<>().fail("栏目不存在");
+        }
+        if (item.getIsSystem() != null && item.getIsSystem() == 1) {
+            return new ResponseWrapper<>().fail("系统内置栏目不可删除");
+        }
+        navItemMapper.deleteById(id);
+        return new ResponseWrapper<>().success();
     }
 }

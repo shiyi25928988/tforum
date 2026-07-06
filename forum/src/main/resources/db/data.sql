@@ -15,6 +15,12 @@ INSERT IGNORE INTO `article_tag` (`id`, `name`) VALUES (6, '后端');
 INSERT IGNORE INTO `article_tag` (`id`, `name`) VALUES (7, '开源');
 INSERT IGNORE INTO `article_tag` (`id`, `name`) VALUES (8, '技术分享');
 
+-- 默认导航栏栏目（系统内置，首页始终可见）
+INSERT IGNORE INTO `nav_item` (`id`, `name`, `url`, `type`, `is_visible`, `sort_order`, `is_system`) VALUES (1, '首页', '/', 'internal', 1, 1, 1);
+INSERT IGNORE INTO `nav_item` (`id`, `name`, `url`, `type`, `is_visible`, `sort_order`, `is_system`) VALUES (2, '讨论区', '/discussion', 'internal', 1, 2, 1);
+INSERT IGNORE INTO `nav_item` (`id`, `name`, `url`, `type`, `is_visible`, `sort_order`, `is_system`) VALUES (3, 'Skills', '/skills', 'internal', 1, 3, 1);
+INSERT IGNORE INTO `nav_item` (`id`, `name`, `url`, `type`, `is_visible`, `sort_order`, `is_system`) VALUES (4, '图书角', '/books', 'internal', 1, 4, 1);
+
 -- 默认讨论区分组
 INSERT IGNORE INTO `discussion_category` (`id`, `name`, `description`, `sort_order`) VALUES (1, '技术讨论', '技术话题交流', 1);
 INSERT IGNORE INTO `discussion_category` (`id`, `name`, `description`, `sort_order`) VALUES (2, '问答求助', '提问与解答', 2);
