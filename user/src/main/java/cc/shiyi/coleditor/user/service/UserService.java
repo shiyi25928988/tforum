@@ -30,6 +30,48 @@ public class UserService {
     }
 
     /**
+     * 获取当前登录用户信息（含 token）
+     *
+     * @return 当前登录用户的 UserInfo，未登录时返回 null
+     */
+    public UserInfo getCurrentUserInfo() {
+        Long id = StpUtil.getLoginIdAsLong();
+        if (Objects.isNull(id)) {
+            return null;
+        }
+        User user = userMapper.selectById(id);
+        return UserConverter.toUserInfo(user);
+    }
+
+    /**
+     * 验证 token 有效性并返回对应用户信息（供第三方应用调用）
+     *
+     * @param token 待验证的 token 字符串
+     * @return token 有效时返回 UserInfo（含 token），无效时返回 null
+     */
+    public UserInfo verifyToken(String token) {
+        if (Strings.isNullOrEmpty(token)) {
+            return null;
+        }
+        Object loginId = StpUtil.getLoginIdByToken(token);
+        if (Objects.isNull(loginId)) {
+            return null;
+        }
+        User user;
+        try {
+            user = userMapper.selectById(Long.parseLong(loginId.toString()));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        if (Objects.isNull(user)) {
+            return null;
+        }
+        UserInfo info = UserConverter.toUserInfo(user);
+        info.setToken(token);
+        return info;
+    }
+
+    /**
      根据用户ID查询用户信息
 
      @param id 用户唯一标识ID

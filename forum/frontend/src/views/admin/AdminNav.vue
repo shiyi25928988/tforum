@@ -55,6 +55,10 @@
         </el-form-item>
         <el-form-item label="链接URL">
           <el-input v-model="form.url" :disabled="form.isSystem === 1" />
+          <div v-if="form.type === 'external'" style="font-size: 12px; color: var(--el-text-color-secondary); line-height: 1.6; margin-top: 4px">
+            外部链接可使用占位符 <code>{token}</code>，用户点击跳转时会自动替换为当前登录 token。<br />
+            示例：<code>https://other-app.com/sso?token={token}</code>
+          </div>
         </el-form-item>
         <el-form-item label="类型">
           <el-radio-group v-model="form.type" :disabled="form.isSystem === 1">

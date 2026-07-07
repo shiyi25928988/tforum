@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.Base64;
 import org.springframework.web.bind.annotation.RestController;
@@ -85,5 +86,21 @@ public class UserController {
     @GetMapping("/api/v1/user/{id}")
     public ResponseWrapper<UserInfo> getUserById(@PathVariable("id") Long id) {
         return new ResponseWrapper<UserInfo>().success(userService.getUserInfoById(id));
+    }
+
+    @Operation(summary = "获取当前登录用户信息（含 token）")
+    @GetMapping("/api/v1/user/current")
+    public ResponseWrapper<UserInfo> getCurrentInfo() {
+        return new ResponseWrapper<UserInfo>().success(userService.getCurrentUserInfo());
+    }
+
+    @Operation(summary = "第三方应用验证 token，返回用户信息")
+    @GetMapping("/api/v1/user/verifyToken")
+    public ResponseWrapper<UserInfo> verifyToken(@RequestParam String token) {
+        UserInfo info = userService.verifyToken(token);
+        if (info == null) {
+            return new ResponseWrapper<UserInfo>().fail("token 无效");
+        }
+        return new ResponseWrapper<UserInfo>().success(info);
     }
 }

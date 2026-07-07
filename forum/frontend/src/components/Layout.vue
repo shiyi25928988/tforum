@@ -107,7 +107,13 @@ function handleNavClick(item: NavItem) {
 }
 
 function openExternal(url: string) {
-  window.open(url, '_blank')
+  // 支持占位符 {token} —— 已登录时替换为当前用户 token，便于跳转到其他 host 应用时带鉴权
+  let finalUrl = url
+  if (finalUrl.includes('{token}')) {
+    const token = userStore.getToken() || ''
+    finalUrl = finalUrl.replace('{token}', encodeURIComponent(token))
+  }
+  window.open(finalUrl, '_blank')
 }
 
 const themeIcon = computed(() => {

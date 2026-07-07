@@ -1,0 +1,195 @@
+# ========================================
+# tForum 全栈 Docker Compose 编排
+# ========================================
+# 包含服务:
+#   - MySQL 8.0           (端口 3306)
+#   - Redis               (端口 6379)
+#   - MinIO               (端口 9000 API / 9001 控制台) — 供 App 和 Milvus 共用
+#   - etcd                (Milvus 依赖)
+#   - Milvus Standalone   (端口 19530 / 9091)
+#   - forum-backend       (端口 8081) — Spring Boot
+#   - forum-frontend      (端口 80)   — Nginx + Vue3
+#
+# 启动前准备:
+#   1. 后端打包:  cd forum && mvn package -DskipTests
+#   2. 启动全部:  docker-compose -f docker-compose-all.yml up -d
+#   3. 查看日志:  docker-compose -f docker-compose-all.yml logs -f
+#   4. 停止全部:  docker-compose -f docker-compose-all.yml down -v
+#
+# 访问地址:
+#   前台页面:    http://localhost
+#   管理后台:    http://localhost/admin
+#   Swagger:     http://localhost:8081/swagger-ui.html
+#   MinIO 控制台: http://localhost:9001 (minioadmin / minioadmin)
+# ========================================
+
+services:
+  # ========================================
+  # 基础设施
+  # ========================================
+
+  mysql:
+    image: mysql:8.4.10
+    container_name: tforum-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: tforum
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:8.2.4
+    container_name: tforum-redis
+    command: redis-server --requirepass "123456"
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "123456", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # ========================================
+  # MinIO — 供 App 文件存储和 Milvus 内部存储共用
+  # ========================================
+
+  minio:
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    container_name: tforum-minio
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web 控制台
+    volumes:
+      - minio-data:/minio_data
+    command: minio server /minio_data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 5
+    restart: unless-stopped
+
+  # ========================================
+  # Milvus 依赖 (来自 docker/milvus-standalone-docker-compose.yml)
+  # ========================================
+
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.18
+    container_name: tforum-etcd
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=50000
+    volumes:
+      - etcd-data:/etcd
+    command: etcd -advertise-client-urls=http://etcd:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 30s
+      timeout: 20s
+      retries: 5
+    restart: unless-stopped
+
+  milvus-standalone:
+    image: milvusdb/milvus:v2.6.2
+    container_name: tforum-milvus
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+      MQ_TYPE: woodpecker
+    volumes:
+      - milvus-data:/var/lib/milvus
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 30s
+      start_period: 90s
+      timeout: 20s
+      retries: 5
+    depends_on:
+      etcd:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ========================================
+  # 应用服务
+  # ========================================
+
+  forum-backend:
+    image: tforum-backend:latest
+    container_name: tforum-backend
+    ports:
+      - "8081:8081"
+    environment:
+      # MySQL
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tforum?createDatabaseIfNotExist=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: 123456
+      # MinIO
+      MINIO_HOST: minio
+      MINIO_PORT: 9000
+      MINIO_BUCKET: forum
+      MINIO_USERNAME: minioadmin
+      MINIO_PASSWORD: minioadmin
+      MINIO_ISHTTPS: "false"
+      # Milvus
+      SPRING_AI_VECTORSTORE_MILVUS_CLIENT_HOST: milvus-standalone
+      SPRING_AI_VECTORSTORE_MILVUS_CLIENT_PORT: 19530
+      # OpenAI (可选 — 不设置则 AI 功能不可用)
+      SPRING_AI_OPENAI_BASE_URL: http://10.35.79.250:52415
+      SPRING_AI_OPENAI_API_KEY: dummy
+      SPRING_AI_OPENAI_CHAT_MODEL: mlx-community/Qwen3.6-35B-A3B-8bit
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    restart: unless-stopped
+
+  forum-frontend:
+    image: tforum-frontend:latest
+    container_name: tforum-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - forum-backend
+    restart: unless-stopped
+
+# ========================================
+# 持久化数据卷
+# ========================================
+
+volumes:
+  mysql-data:
+  redis-data:
+  minio-data:
+  etcd-data:
+  milvus-data:
