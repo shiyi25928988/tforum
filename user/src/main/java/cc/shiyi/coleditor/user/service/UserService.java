@@ -12,6 +12,8 @@ import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -240,6 +242,44 @@ public class UserService {
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.like("username", userName);
         return userMapper.selectList(queryWrapper);
+    }
+
+    /**
+     * 获取所有用户信息（不含密码，且不返回 token）
+     *
+     * @return 全部用户的 UserInfo 列表
+     */
+    public List<UserInfo> getAllUsers() {
+        List<User> users = userMapper.selectList(null);
+        List<UserInfo> result = new ArrayList<>(users.size());
+        for (User user : users) {
+            UserInfo info = UserConverter.toUserInfo(user);
+            info.setToken(null); // 列表场景不返回 token
+            result.add(info);
+        }
+        return result;
+    }
+
+    /**
+     * 根据用户名或账号模糊查询用户（不含密码，且不返回 token）
+     *
+     * @param keyword 模糊匹配关键字（同时匹配 username 与 account，满足其一即返回）
+     * @return 匹配到的用户列表；keyword 为空时返回空列表
+     */
+    public List<UserInfo> searchUsers(String keyword) {
+        if (Strings.isNullOrEmpty(keyword)) {
+            return Collections.emptyList();
+        }
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.and(w -> w.like("username", keyword).or().like("account", keyword));
+        List<User> users = userMapper.selectList(queryWrapper);
+        List<UserInfo> result = new ArrayList<>(users.size());
+        for (User user : users) {
+            UserInfo info = UserConverter.toUserInfo(user);
+            info.setToken(null); // 列表场景不返回 token
+            result.add(info);
+        }
+        return result;
     }
 
     //TODO: 删除用户

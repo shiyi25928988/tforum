@@ -82,6 +82,18 @@ public class UserController {
         return new ResponseWrapper().success(avatarService.getAllAvatar());
     }
 
+    @Operation(summary = "获取所有用户")
+    @GetMapping("/api/v1/user/list")
+    public ResponseWrapper<List<UserInfo>> listAllUsers() {
+        return new ResponseWrapper<List<UserInfo>>().success(userService.getAllUsers());
+    }
+
+    @Operation(summary = "根据用户名或账号模糊查询用户")
+    @GetMapping("/api/v1/user/search")
+    public ResponseWrapper<List<UserInfo>> searchUsers(@RequestParam(required = false) String keyword) {
+        return new ResponseWrapper<List<UserInfo>>().success(userService.searchUsers(keyword));
+    }
+
     @Operation(summary = "根据ID获取用户信息")
     @GetMapping("/api/v1/user/{id}")
     public ResponseWrapper<UserInfo> getUserById(@PathVariable("id") Long id) {
