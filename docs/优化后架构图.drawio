@@ -1,0 +1,201 @@
+<mxfile host="app.diagrams.net" agent="tforum-architecture" version="24.0.0">
+  <diagram name="优化后架构图" id="tforum-opt-arch">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1120" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- 标题 -->
+        <mxCell id="title" value="tForum 优化后架构：科室主任审批流 + 红/绿区内容可见性（模式A 逻辑分区）" style="text;html=1;fontSize=18;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1500" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ============ 绿区 ============ -->
+        <mxCell id="greenZone" value="绿区网络（对外 / 低密）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2e7d32;verticalAlign=top;fontStyle=1;fontSize=14;align=left;spacingLeft=10;spacingTop=8;dashed=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="80" width="320" height="400" as="geometry" />
+        </mxCell>
+        <mxCell id="greenUser" value="绿区用户&#10;（浏览器：只读浏览）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#2e7d32;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="90" y="130" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="greenNginx" value="绿区 nginx 入口&#10;强制注入：&#10;proxy_set_header X-Network-Zone &quot;green&quot;;&#10;（覆盖客户端伪造头）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#a5d6a7;strokeColor=#1b5e20;fontSize=12;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="90" y="240" width="220" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="greenNote" value="绿区仅可见&#10;zone_scope = GREEN / ALL&#10;的已发布内容" style="text;html=1;fillColor=none;strokeColor=none;fontSize=11;fontColor=#2e7d32;align=center;" vertex="1" parent="1">
+          <mxGeometry x="90" y="370" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="e_gu_gn" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#2e7d32;" edge="1" parent="1" source="greenUser" target="greenNginx">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ============ 红区 ============ -->
+        <mxCell id="redZone" value="红区网络（内部 / 高密）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffebee;strokeColor=#c62828;verticalAlign=top;fontStyle=1;fontSize=14;align=left;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="40" y="520" width="320" height="500" as="geometry" />
+        </mxCell>
+        <mxCell id="redUser" value="红区用户&#10;作者（发文/提交审批）&#10;科室主任（审批本科室内容）&#10;管理员（全院/后台）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcdd2;strokeColor=#c62828;fontSize=12;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="90" y="570" width="220" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="redNginx" value="红区 nginx / 内网入口&#10;注入：&#10;proxy_set_header X-Network-Zone &quot;red&quot;;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ef9a9a;strokeColor=#b71c1c;fontSize=12;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="90" y="720" width="220" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="redNote" value="红区可见 RED / ALL 内容&#10;写作、提交审批、&#10;主任审批中心等写操作&#10;仅红区可用" style="text;html=1;fillColor=none;strokeColor=none;fontSize=11;fontColor=#c62828;align=center;" vertex="1" parent="1">
+          <mxGeometry x="90" y="850" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ru_rn" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#c62828;" edge="1" parent="1" source="redUser" target="redNginx">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ============ 应用层 ============ -->
+        <mxCell id="appZone" value="tForum 应用（单进程 :8081）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1565c0;verticalAlign=top;fontStyle=1;fontSize=14;align=left;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="420" y="80" width="640" height="940" as="geometry" />
+        </mxCell>
+
+        <mxCell id="zoneFilter" value="ZoneHeaderFilter（common 模块新增）&#10;解析 X-Network-Zone → ZoneContext（ThreadLocal：GREEN/RED）&#10;缺失 / 非法 / 直连伪造 → 默认 GREEN（fail-closed 最小可见）+ 告警&#10;可选：校验可信代理网段；SSE 异步线程透传" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#90caf9;strokeColor=#0d47a1;fontSize=12;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="450" y="130" width="580" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="saToken" value="Sa-Token 拦截器（user 模块）&#10;全局登录校验 + @SaCheckRole(&quot;director&quot;/&quot;admin&quot;) 注解鉴权&#10;主任数据范围：仅本科室成员提交的内容" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#1565c0;fontSize=12;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="450" y="250" width="580" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="contentCtrl" value="内容控制器&#10;ContentController&#10;/content/submit 提交审批&#10;文章/帖子/图书/Skill/文档" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1f5fe;strokeColor=#0277bd;fontSize=12;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="450" y="350" width="280" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="approvalCtrl" value="审批控制器&#10;ApprovalController&#10;/approval/pending|approve|reject|takedown&#10;@SaCheckRole(director, admin)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1f5fe;strokeColor=#0277bd;fontSize=12;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="750" y="350" width="280" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="contentSvc" value="内容服务（状态机）&#10;草稿(0) → 待审批(2) → 已发布(1)&#10;　　　　　　　→ 已驳回(3) / 已下线(4)&#10;作者预选 zone_scope（默认 RED）&#10;审批通过才写搜索/向量索引" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d1c4e9;strokeColor=#4527a0;fontSize=12;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="450" y="490" width="280" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="approvalSvc" value="审批服务 ApprovalService&#10;科室数据范围过滤&#10;通过（可调整 zone_scope）/ 驳回（理由必填）&#10;写 content_approval 流水留痕&#10;下架 / 发布后修改触发复审" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d1c4e9;strokeColor=#4527a0;fontSize=12;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="750" y="490" width="280" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="zoneInterceptor" value="ZoneLineInnerInterceptor（common 新增，MyBatis-Plus InnerInterceptor）&#10;内容表 SELECT 自动追加：GREEN → zone_scope IN (GREEN,ALL) AND status=1；RED → zone_scope IN (RED,ALL)&#10;「我的内容 / 审批待办 / 后台管理」经显式开关绕过；默认强制过滤，防遗漏" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#90caf9;strokeColor=#0d47a1;fontSize=12;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="450" y="640" width="580" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="aiSvc" value="AI / RAG 链路（common.ai + mcp）&#10;ChatController / RAG / mcpChat（SSE）&#10;Milvus 检索加 filterExpression(zone_scope)&#10;@Tool 经 ToolContext 透传 zone&#10;绿区上下文不挂载 SSH/邮件工具&#10;ChantClientPool + JDBC 聊天记忆" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#f9a825;fontSize=12;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="450" y="760" width="280" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="ossProxy" value="OSS 文件代理（OssController）&#10;GET /api/v1/oss/file?url=...&#10;解析对象键前缀：green/ 两区可访问&#10;red/ 仅红区登录用户，绿区 403&#10;历史对象默认按 red/ 处理（fail-closed）&#10;跨区审批：MinIO copyObject 迁移前缀" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe0b2;strokeColor=#e65100;fontSize=12;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="750" y="760" width="280" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="frontend" value="前端 Vue3：启动拉取 GET /system/zone → 绿区隐藏投稿/审批入口（只读）；红区展示写作、审批中心（待办角标）、区域选择（默认仅红区，GREEN 二次确认）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eceff1;strokeColor=#546e7a;fontSize=11;align=left;spacingLeft=10;verticalAlign=middle;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="450" y="930" width="580" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- 应用内连线 -->
+        <mxCell id="e_gn_zf" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#2e7d32;strokeWidth=2;" edge="1" parent="1" source="greenNginx" target="zoneFilter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rn_zf" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#c62828;strokeWidth=2;" edge="1" parent="1" source="redNginx" target="zoneFilter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_zf_sa" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="zoneFilter" target="saToken">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_sa_cc" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="saToken" target="contentCtrl">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_sa_ac" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="saToken" target="approvalCtrl">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cc_cs" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="contentCtrl" target="contentSvc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ac_as" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="approvalCtrl" target="approvalSvc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cs_as" value="审批通过/驳回&#10;状态回写" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=open;startArrow=open;dashed=1;fontSize=10;" edge="1" parent="1" source="contentSvc" target="approvalSvc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cs_zi" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="contentSvc" target="zoneInterceptor">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_as_zi" value="审批/管理场景&#10;显式绕过区域过滤" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;dashed=1;fontSize=10;" edge="1" parent="1" source="approvalSvc" target="zoneInterceptor">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ============ 基础设施 ============ -->
+        <mxCell id="infraZone" value="数据与基础设施（部署于红区侧；绿区仅经 nginx 受控访问）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff8e1;strokeColor=#f9a825;verticalAlign=top;fontStyle=1;fontSize=14;align=left;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="80" width="440" height="940" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mysql" value="MySQL 8&#10;新增 department（科室）&#10;新增 content_approval（审批流水）&#10;system_user.department_id&#10;article/post/book/skill/markdown_doc + zone_scope&#10;status 状态机对齐（0草稿/2待审/1发布/3驳回/4下线）" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#fff3e0;strokeColor=#e65100;fontSize=11;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="130" width="360" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="redis" value="Redis&#10;db1 业务缓存（缓存 key 必须拼接 zone，防串区）&#10;db2 Sa-Token 会话（alone-redis）" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#ffcdd2;strokeColor=#b71c1c;fontSize=11;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="290" width="360" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="lucene" value="Lucene 本地索引（search 模块）&#10;IndexedDocument 新增 zoneScope 字段&#10;查询 BooleanQuery 按区过滤&#10;审批通过才建索引 / 下架即删&#10;（补齐 update/deleteDocument，title 改 TextField）" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#c8e6c9;strokeColor=#1b5e20;fontSize=11;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="410" width="360" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="milvus" value="Milvus 向量库 vector_store&#10;metadata 增加 zone_scope&#10;similaritySearch 带 filterExpression&#10;仅 APPROVED 且区域匹配的内容可入库&#10;（防红区知识经 RAG 泄露到绿区）" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#b3e5fc;strokeColor=#01579b;fontSize=11;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="560" width="360" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="minio" value="MinIO bucket: forum&#10;对象键按区前缀分目录：&#10;　green/... 两区可访问&#10;　red/... 仅红区可下载（代理校验）&#10;图书/封面/附件/图片随内容区域落前缀" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#ffe0b2;strokeColor=#e65100;fontSize=11;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="710" width="360" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="llm" value="外部 LLM API（DashScope 兼容端点）&#10;chat: deepseek-v4-pro / embedding: text-embedding-v4" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eceff1;strokeColor=#546e7a;fontSize=11;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="870" width="360" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- 应用 → 基础设施 连线 -->
+        <mxCell id="e_zi_mysql" value="自动追加 zone_scope 条件" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#e65100;fontSize=10;" edge="1" parent="1" source="zoneInterceptor" target="mysql">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cs_lucene" value="审批通过建索引/下架删除" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#1b5e20;fontSize=10;" edge="1" parent="1" source="contentSvc" target="lucene">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1080" y="545" />
+              <mxPoint x="1080" y="470" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_ai_milvus" value="RAG 检索按区过滤" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#01579b;fontSize=10;" edge="1" parent="1" source="aiSvc" target="milvus">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ai_lucene" value="@Tool 全文搜索按区" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#01579b;fontSize=10;dashed=1;" edge="1" parent="1" source="aiSvc" target="lucene">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1090" y="825" />
+              <mxPoint x="1090" y="470" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_oss_minio" value="前缀校验 + 流式代理" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#e65100;fontSize=10;" edge="1" parent="1" source="ossProxy" target="minio">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ai_llm" value="SSE 流式对话" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#546e7a;fontSize=10;dashed=1;" edge="1" parent="1" source="aiSvc" target="llm">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1100" y="825" />
+              <mxPoint x="1100" y="905" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_sa_redis" value="会话" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#b71c1c;fontSize=10;" edge="1" parent="1" source="saToken" target="redis">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1070" y="285" />
+              <mxPoint x="1070" y="335" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 底部说明：模式B -->
+        <mxCell id="modeBNote" value="模式B（物理隔离，二期按合规要求）：红区部署完整一套为主环境；绿区独立部署只读实例；审批通过且 zone_scope=GREEN/ALL 的内容（含附件/Lucene/Milvus 索引）经单向网闸 + Spring Batch 同步至绿区，RED 内容永不流出；绿区 nginx 仅放行 GET 只读路由。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#9e9e9e;fontSize=11;align=left;spacingLeft=10;verticalAlign=middle;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1040" width="1520" height="60" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
